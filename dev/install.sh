@@ -25,4 +25,3 @@ cd ~
 git clone https://github.com/Stygain/brypt-node.git
 cd brypt-node/dev
 g++ node.cpp "test.cpp" -o device -O2 -Wall -lzmq
-./device --server -type DIRECT -port 3005
