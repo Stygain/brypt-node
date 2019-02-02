@@ -14,6 +14,29 @@ function buf2hex(buffer) { // buffer is an ArrayBuffer
 function main() {
 	aes128Ctr();
 	aes256Ctr();
+
+	hmacSha2();
+}
+
+function hmacSha2(){
+	var mssg = "The quick brown fox jumps over the lazy dog";
+//	var key = "0123456789012345";
+
+	const key = window.crypto.subtle.generateKey(
+		{name:"HMAC", "hash":"SHA-256"},
+		 true,
+		 ["sign", "verify"]);
+		key.then(function(k) {
+				console.log("KEY:");
+				console.log(k);
+			  const buff = new TextEncoder("utf-8").encode(mssg);
+				const sig = window.crypto.subtle.sign("HMAC", k, buff);
+						sig.then(function(s){
+										console.log(buf2hex(s));
+						});
+			}).catch(function(err){
+				console.log(err);			
+			});
 }
 
 function sha2() {
@@ -48,18 +71,33 @@ function aes128Ctr(){
 								["encrypt", "decrypt"]
 				);
 				k_promise.then(function(key) {
+								
 								key_object = key;
 								console.log("AES-CTR-128");
-								const result = window.crypto.subtle.exportKey("pkcs8", key);
-								result.then(function(stuff) {
+								const result = window.crypto.subtle.exportKey("raw", key);
+								console.log("Result:");
+								console.log(result);
+								console.log("End Result:");
+							/*	result.then(function(stuff) {
 									console.log(stuff);
 								});
 								result.catch(function(err){
 									console.log(err);
 								});
-
-
-								aesEncrypt();
+*/
+								synchctxt = aesEncrypt();
+								enc_promise = new Promise(function(resolve, reject){
+									setTimeout(() => resolve(aesEncrypt()), 1000);
+								});
+								enc_promise.then(function(synchctxt){
+									console.log("logging from a layer up");
+									console.log(synchctxt);
+								});
+								enc_promise.then(function(err){
+									console.log(err);
+								});
+								console.log("logging from a layer up");
+								console.log(synchctxt);
 				});
 				k_promise.catch(function(err) {
 								console.log(err.message);
@@ -91,7 +129,7 @@ function aesEncrypt() {
 				let ptxt = encode();
 
 
-				enc_promise = window.crypto.subtle.encrypt(
+				return enc_promise = window.crypto.subtle.encrypt(
 								{
 												name: "AES-CTR",
 												counter,
@@ -108,13 +146,14 @@ function aesEncrypt() {
 											//	exportCryptoKey(key_object);
 											//	console.log(window.crypto.subtle.exportKey("pkcs8", key_object));
 												console.log(buf2hex(ciphertext));
+												return buf2hex(ciphertext);
 								}, function(err) {
 												console.log(err.message);
 								}
 				);
 }
 
-window.onload = sha2;
+window.onload = main;
 </script>
 
 				<title>Crypto!</title>
