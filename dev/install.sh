@@ -42,7 +42,8 @@ before_reboot(){
       echo "================================================================="
       cd /home/pi
       git clone https://github.com/Stygain/brypt-node.git
-      git checkout rthowerton
+      git fetch origin rthowerton
+      git checkout -t origin/rthowerton
       cd brypt-node/dev
       g++ node.cpp "test.cpp" -o device -O2 -Wall -lzmq
 
