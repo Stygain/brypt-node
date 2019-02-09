@@ -42,6 +42,7 @@ before_reboot(){
       echo "================================================================="
       cd /home/pi
       git clone https://github.com/Stygain/brypt-node.git
+      cd /home/pi/brypt-node
       git fetch origin rthowerton
       git checkout -t origin/rthowerton
       cd brypt-node/dev
