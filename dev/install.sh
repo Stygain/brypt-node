@@ -45,7 +45,7 @@ before_reboot(){
       cd /home/pi/brypt-node
       git fetch origin rthowerton
       git checkout -t origin/rthowerton
-      cd brypt-node/dev
+      cd /home/pibrypt-node/dev
       g++ node.cpp "test.cpp" -o device -O2 -Wall -lzmq
 
       # Run DNSMasq and HostAPD
