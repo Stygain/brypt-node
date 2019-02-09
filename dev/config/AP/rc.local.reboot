@@ -17,6 +17,6 @@ if [ "$_IP" ]; then
   printf "My IP address is %s\n" "$_IP"
 fi
 
-sh /home/pi/install.sh &
+sh /home/pi/brypt_node/dev/config/AP/startup_ap.sh &
 
 exit 0
