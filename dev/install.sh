@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# if [[ $EUID -ne 0 ]]; then
-#    echo "This script must be run as root" 
-#    exit 1
-# fi
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 
+   exit 1
+fi
 
 # Before rebooting for AP configuration
 before_reboot(){
@@ -83,7 +83,7 @@ after_reboot(){
       
       # Set the SSID name
       RAND=`echo $RANDOM | md5sum | cut -b 1-5`
-      echo "SSID=brypt-net-$RAND" >> /home/pi/brypt-node/dev/config/AP/hostapd.conf.on
+      "SSID=brypt-net-$RAND" >> /home/pi/brypt-node/dev/config/AP/hostapd.conf.on
       cp /home/pi/brypt-node/dev/config/AP/hostapd.conf.on /etc/hostapd/hostapd.conf
       
       # Tell hostapd where to find the config file
