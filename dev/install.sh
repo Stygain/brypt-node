@@ -111,7 +111,6 @@ after_reboot(){
 if [ -f /root/rebooted ]; then
    after_reboot
    sudo rm /root/rebooted
-   sudo reboot
 else
    before_reboot
    touch /root/rebooted
