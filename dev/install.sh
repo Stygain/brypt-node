@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root" 
-   exit 1
-fi
+# if [[ $EUID -ne 0 ]]; then
+#    echo "This script must be run as root" 
+#    exit 1
+# fi
 
 # Before rebooting for AP configuration
 before_reboot(){
@@ -45,7 +45,7 @@ before_reboot(){
       cd /home/pi/brypt-node
       git fetch origin rthowerton
       git checkout -t origin/rthowerton
-      cd /home/pibrypt-node/dev
+      cd /home/pi/brypt-node/dev
       g++ node.cpp "test.cpp" -o device -O2 -Wall -lzmq
 
       # Run DNSMasq and HostAPD
