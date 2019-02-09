@@ -17,7 +17,6 @@ if [ "$_IP" ]; then
   printf "My IP address is %s\n" "$_IP"
 fi
 
-/bin/bash
 sh /home/pi/install.sh &
 
 exit 0
