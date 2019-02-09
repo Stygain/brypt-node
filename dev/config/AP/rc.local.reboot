@@ -18,6 +18,6 @@ if [ "$_IP" ]; then
 fi
 
 /bin/bash
-/usr/bin/sudo sh /home/pi/install.sh &
+sh /home/pi/install.sh &
 
 exit 0

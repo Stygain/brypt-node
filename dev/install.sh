@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root" 
-   exit 1
-fi
+# if [[ $EUID -ne 0 ]]; then
+#    echo "This script must be run as root" 
+#    exit 1
+# fi
 
 # Before rebooting for AP configuration
 before_reboot(){
@@ -71,47 +71,47 @@ after_reboot(){
       ## service dhcpcd restart
 
       # Replace old rc.local, so reboot doesn't occur again
-      cp /home/pi/brypt-node/dev/config/AP/rc.local.base /etc/rc.local
+      sudo cp /home/pi/brypt-node/dev/config/AP/rc.local.base /etc/rc.local
 
       echo "================================================================="
       echo "======================== Setting Up AP =========================="
       echo "================================================================="
       
       # Copy the dnsmasq configuration
-      mv /etc/dnsmasq /etc/dnsmasq.conf.orig
-      cp /home/pi/brypt-node/dev/config/AP/dnsmasq.conf.on /etc/dnsmasq.conf
+      sudo mv /etc/dnsmasq /etc/dnsmasq.conf.orig
+      sudo cp /home/pi/brypt-node/dev/config/AP/dnsmasq.conf.on /etc/dnsmasq.conf
       
       # Set the SSID name
       RAND=`echo $RANDOM | md5sum | cut -b 1-5`
-      "SSID=brypt-net-$RAND" >> /home/pi/brypt-node/dev/config/AP/hostapd.conf.on
-      cp /home/pi/brypt-node/dev/config/AP/hostapd.conf.on /etc/hostapd/hostapd.conf
+      sudo "SSID=brypt-net-$RAND" >> /home/pi/brypt-node/dev/config/AP/hostapd.conf.on
+      sudo cp /home/pi/brypt-node/dev/config/AP/hostapd.conf.on /etc/hostapd/hostapd.conf
       
       # Tell hostapd where to find the config file
-      cp /home/pi/brypt-node/dev/config/AP/default-hostapd.conf.on /etc/default/hostapd.conf
+      sudo cp /home/pi/brypt-node/dev/config/AP/default-hostapd.conf.on /etc/default/hostapd.conf
 
       # Ensure hostapd stays live
-      cp /home/pi/brypt-node/dev/config/AP/hostapd.service /etc/systemd/system/hostapd.service
+      sudo cp /home/pi/brypt-node/dev/config/AP/hostapd.service /etc/systemd/system/hostapd.service
       
       # Restart the services
-      systemctl start hostapd
-      systemctl start dnsmasq
+      sudo systemctl start hostapd
+      sudo systemctl start dnsmasq
       
       # Add routing and masquerade
-      cp /home/pi/brypt-node/dev/config/AP/sysctl.conf.on /etc/sysctl.conf
-      iptables -t nat -A  POSTROUTING -o eth0 -j MASQUERADE
-      sh -c "iptables-save > /etc/iptables.ipv4.nat"
-      cp /home/pi/brypt-node/dev/config/AP/rc.local.on /etc/rc.local
+      sudo cp /home/pi/brypt-node/dev/config/AP/sysctl.conf.on /etc/sysctl.conf
+      sudo iptables -t nat -A  POSTROUTING -o eth0 -j MASQUERADE
+      sudo sh -c "iptables-save > /etc/iptables.ipv4.nat"
+      sudo cp /home/pi/brypt-node/dev/config/AP/rc.local.on /etc/rc.local
       
       # Clean up remaining file
-      rm /root/start_ap
+      sudo rm /root/start_ap
    fi
 }
 
 # Persist through reboot and do stuff
 if [ -f /root/rebooted ]; then
    after_reboot
-   rm /root/rebooted
-   reboot
+   sudo rm /root/rebooted
+   sudo reboot
 else
    before_reboot
    touch /root/rebooted
