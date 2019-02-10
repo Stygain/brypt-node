@@ -14,7 +14,7 @@ if [ -f /root/start_ap ]; then
    
    # Set the SSID name
    RAND=`echo $RANDOM | md5sum | cut -b 1-5`
-   sudo echo "SSID=brypt-net-$RAND" >> /home/pi/brypt-node/dev/config/AP/hostapd.conf.on
+   sudo echo "ssid=brypt-net-$RAND" >> /home/pi/brypt-node/dev/config/AP/hostapd.conf.on
    sudo cp /home/pi/brypt-node/dev/config/AP/hostapd.conf.on /etc/hostapd/hostapd.conf
    
    # Tell hostapd where to find the config file
