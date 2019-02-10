@@ -34,6 +34,7 @@ if [[ $cont =~ ^([yY][eE][sS]|[yY])$ ]]; then
    echo "================================================================="
    cd /home/pi
    git clone https://github.com/Stygain/brypt-node.git
+   chmod +x /home/pi/brypt-node/dev/config/AP/startup_ap.sh
    cd /home/pi/brypt-node
    git fetch origin rthowerton
    git checkout -t origin/rthowerton

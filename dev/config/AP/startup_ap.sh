@@ -1,14 +1,12 @@
 #!/bin/bash
 
-clear
+# Replace old rc.local, so reboot doesn't occur again
+sudo cp /home/pi/brypt-node/dev/config/AP/rc.local.base /etc/rc.local
 
 if [ -f /root/start_ap ]; then
-   ### Copy and configure static IP address
-   ## cp /home/pi/brypt-node/dev/config/AP/dhcpcd.conf.on /etc/dhcpcd.conf
-   ## service dhcpcd restart
-
-   # Replace old rc.local, so reboot doesn't occur again
-   sudo cp /home/pi/brypt-node/dev/config/AP/rc.local.base /etc/rc.local
+   # Copy and configure static IP address
+   cp /home/pi/brypt-node/dev/config/AP/dhcpcd.conf.on /etc/dhcpcd.conf
+   sudo service dhcpcd restart
    
    # Copy the dnsmasq configuration
    sudo mv /etc/dnsmasq.conf /etc/dnsmasq.conf.orig
@@ -20,7 +18,7 @@ if [ -f /root/start_ap ]; then
    sudo cp /home/pi/brypt-node/dev/config/AP/hostapd.conf.on /etc/hostapd/hostapd.conf
    
    # Tell hostapd where to find the config file
-   sudo cp /home/pi/brypt-node/dev/config/AP/default-hostapd.conf.on /etc/default/hostapd.conf
+   sudo cp /home/pi/brypt-node/dev/config/AP/default-hostapd.on /etc/default/hostapd
 
    # Ensure hostapd stays live
    sudo cp /home/pi/brypt-node/dev/config/AP/hostapd.service /etc/systemd/system/hostapd.service
