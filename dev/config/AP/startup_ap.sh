@@ -9,10 +9,6 @@ if [ -f /root/start_ap ]; then
 
    # Replace old rc.local, so reboot doesn't occur again
    sudo cp /home/pi/brypt-node/dev/config/AP/rc.local.base /etc/rc.local
-
-   echo "================================================================="
-   echo "======================== Setting Up AP =========================="
-   echo "================================================================="
    
    # Copy the dnsmasq configuration
    sudo mv /etc/dnsmasq.conf /etc/dnsmasq.conf.orig
@@ -20,7 +16,7 @@ if [ -f /root/start_ap ]; then
    
    # Set the SSID name
    RAND=`echo $RANDOM | md5sum | cut -b 1-5`
-   sudo "SSID=brypt-net-$RAND" >> /home/pi/brypt-node/dev/config/AP/hostapd.conf.on
+   sudo echo "SSID=brypt-net-$RAND" >> /home/pi/brypt-node/dev/config/AP/hostapd.conf.on
    sudo cp /home/pi/brypt-node/dev/config/AP/hostapd.conf.on /etc/hostapd/hostapd.conf
    
    # Tell hostapd where to find the config file
@@ -41,8 +37,5 @@ if [ -f /root/start_ap ]; then
    
    # Clean up remaining file
    sudo rm /root/start_ap
-
-   echo "The system will now reboot in 10 seconds to finalize installation."
-   sleep 10
    sudo reboot
 fi
