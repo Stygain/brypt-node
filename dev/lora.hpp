@@ -154,12 +154,6 @@ typedef unsigned char byte;
 
 static const int CHANNEL = 0;
 
-char message[256];
-
-bool sx1272 = true;
-
-byte receivedbytes;
-
 enum sf_t { SF7=7, SF8, SF9, SF10, SF11, SF12 };
 
 /*******************************************************************************
@@ -169,35 +163,35 @@ enum sf_t { SF7=7, SF8, SF9, SF10, SF11, SF12 };
  *******************************************************************************/
 
 // SX1272 - Raspberry connections
-int ssPin = 6;
-int dio0  = 7;
-int RST   = 0;
+static int ssPin = 6;
+static int dio0  = 7;
+static int RST   = 0;
 
 // Set spreading factor (SF7 - SF12)
-sf_t sf = SF7;
+static sf_t sf = SF7;
 
 // Set center frequency
-uint32_t  freq = 868100000; // in Mhz! (868.1)
+static uint32_t  freq = 868100000; // in Mhz! (868.1)
 
-byte hello[32] = "HELLO";
+static byte hello[32] = "HELLO";
 
-void die(const char *s)
+inline void die(const char *s)
 {
     perror(s);
     exit(1);
 }
 
-void selectreceiver()
+inline void selectreceiver()
 {
     digitalWrite(ssPin, LOW);
 }
 
-void unselectreceiver()
+inline void unselectreceiver()
 {
     digitalWrite(ssPin, HIGH);
 }
 
-byte readReg(byte addr)
+inline byte readReg(byte addr)
 {
     unsigned char spibuf[2];
 
@@ -210,7 +204,7 @@ byte readReg(byte addr)
     return spibuf[1];
 }
 
-void writeReg(byte addr, byte value)
+inline void writeReg(byte addr, byte value)
 {
     unsigned char spibuf[2];
 
@@ -222,11 +216,11 @@ void writeReg(byte addr, byte value)
     unselectreceiver();
 }
 
-static void opmode (uint8_t mode) {
+inline static void opmode (uint8_t mode) {
     writeReg(REG_OPMODE, (readReg(REG_OPMODE) & ~OPMODE_MASK) | mode);
 }
 
-static void opmodeLora() {
+inline static void opmodeLora(bool sx1272) {
     uint8_t u = OPMODE_LORA;
     if (sx1272 == false)
         u |= 0x8;   // TBD: sx1276 high freq
@@ -234,9 +228,10 @@ static void opmodeLora() {
 }
 
 
-void SetupLoRa()
+inline bool SetupLoRa()
 {
-    
+    bool sx1272;
+
     digitalWrite(RST, HIGH);
     delay(100);
     digitalWrite(RST, LOW);
@@ -305,9 +300,11 @@ void SetupLoRa()
 
     writeReg(REG_LNA, LNA_MAX_GAIN);
 
+    return sx1272;
+
 }
 
-boolean receive(char *payload) {
+inline boolean receive(char *payload) {
     // clear rxDone
     writeReg(REG_IRQ_FLAGS, 0x40);
 
@@ -323,7 +320,7 @@ boolean receive(char *payload) {
 
         byte currentAddr = readReg(REG_FIFO_RX_CURRENT_ADDR);
         byte receivedCount = readReg(REG_RX_NB_BYTES);
-        receivedbytes = receivedCount;
+        //receivedbytes = receivedCount;
 
         writeReg(REG_FIFO_ADDR_PTR, currentAddr);
 
@@ -335,10 +332,11 @@ boolean receive(char *payload) {
     return true;
 }
 
-void receivepacket() {
+void receivepacket(bool sx1272) {
 
     long int SNR;
     int rssicorr;
+    char message[256];
 
     if(digitalRead(dio0) == 1)
     {
@@ -366,7 +364,7 @@ void receivepacket() {
             printf("Packet RSSI: %d, ", readReg(0x1A)-rssicorr);
             printf("RSSI: %d, ", readReg(0x1B)-rssicorr);
             printf("SNR: %li, ", SNR);
-            printf("Length: %i", (int)receivedbytes);
+            //printf("Length: %i", (int)receivedbytes);
             //printf("\n");
 			/*for(int i = 4; i < 256; i++){
 				temp[i-4] = message[i];
@@ -379,7 +377,7 @@ void receivepacket() {
     } // dio0=1
 }
 
-static void configPower (int8_t pw) {
+inline static void configPower(int8_t pw, bool sx1272) {
     if (sx1272 == false) {
         // no boost used for now
         if(pw >= 17) {
@@ -403,7 +401,7 @@ static void configPower (int8_t pw) {
 }
 
 
-static void writeBuf(byte addr, byte *value, byte len) {                                                       
+inline static void writeBuf(byte addr, byte *value, byte len) {                                                       
     unsigned char spibuf[256]; 
     spibuf[0] = addr | 0x80;
     for (int i = 0; i < len; i++) {
@@ -414,7 +412,7 @@ static void writeBuf(byte addr, byte *value, byte len) {
     unselectreceiver();
 }
 
-void txlora(byte *frame, byte datalen) {
+inline void txlora(byte *frame, byte datalen) {
 
     // set the IRQ mapping DIO0=TxDone DIO1=NOP DIO2=NOP
     writeReg(RegDioMapping1, MAP_DIO0_LORA_TXDONE|MAP_DIO1_LORA_NOP|MAP_DIO2_LORA_NOP);
