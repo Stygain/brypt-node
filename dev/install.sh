@@ -9,7 +9,7 @@ if [[ $cont =~ ^([yY][eE][sS]|[yY])$ ]]; then
    echo "================ Installing Necessary Packages =================="
    echo "================================================================="
    # Start with necessary packages
-   sudo apt-get install libtool pkg-config build-essential autoconf automake git
+   sudo apt-get install libtool pkg-config build-essential autoconf automake git openssl libssl-dev
 
    # Download ZMQ package
    echo "================================================================="
@@ -39,7 +39,7 @@ if [[ $cont =~ ^([yY][eE][sS]|[yY])$ ]]; then
    git checkout -t origin/rthowerton
    cd /home/pi/brypt-node/dev
    chmod +x /home/pi/brypt-node/dev/config/AP/startup_ap.sh
-   g++ node.cpp "test.cpp" -o device -O2 -Wall -lzmq
+   make
 
    # Run DNSMasq and HostAPD
    read -r -p "The script will now install packages necessary for instantiating a Wi-Fi access point/hotspot. This will cause your device to restart. Do you wish to continue? [y/N]" cont
