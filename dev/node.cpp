@@ -197,7 +197,7 @@ void Node::setup(Options options){
     this->state.coordinator.technology = options.technology;
     this->state.self.port = options.port;
     this->state.self.next_full_port = port_num + PORT_GAP;
-    this->notifier = new Notifier(&this->state, std::to_string(port_num + 1));
+    this->notifier = new Notifier(&this->state, this, std::to_string(port_num + 1));
     this->watcher = new PeerWatcher(this, &this->state);
 
     options.addr = get_local_address();
@@ -252,6 +252,24 @@ Connection * Node::setup_wifi_connection(std::string peer_id, std::string port) 
     this->message_queue.push_pipe("./tmp/" + opts.peer_name + ".pipe");
 
     Connection * connection = ConnectionFactory(DIRECT_TYPE, &opts);
+
+    return connection;
+}
+
+/* **************************************************************************
+** Function:
+** Description:
+** *************************************************************************/
+Connection * Node::setup_lora_connection(std::string peer_id, std::string port) {
+    Options opts;
+    opts.technology = LORA_TYPE;
+    opts.operation = ROOT;
+    opts.port = port;
+    opts.is_control = false;
+    opts.peer_name = peer_id;
+    this->message_queue.push_pipe("./tmp/" + opts.peer_name + ".pipe");
+
+    Connection * connection = ConnectionFactory(LORA_TYPE, &opts);
 
     return connection;
 }
@@ -474,6 +492,10 @@ void Node::handle_fulfilled() {
 void Node::listen(){
     std::cout << "== Brypt Node is listening\n";
     unsigned int run = 1;
+    if(LORA_TYPE){
+        class Connection* lora_conn = setup_lora_connection("999", "3069");
+        this->connections.push_back(lora_conn);
+    }
     do {
         std::string control_request = "";
         std::string notification = "";
@@ -507,7 +529,7 @@ void Node::listen(){
         // If branch or lead response has been recieved handle request on next pass?
 
         // SIMULATE CLIENT REQUEST
-        /*
+        
         if (run % 10 == 0) {
             std::cout << "== [Node] Simulating client sensor Information request" << '\n';
             Message message("0xFFFFFFFF", this->state.self.id, INFORMATION_TYPE, 0, "Request for Network Information.", run);
@@ -519,7 +541,7 @@ void Node::listen(){
             Message message("0xFFFFFFFF", this->state.self.id, QUERY_TYPE, 0, "Request for Sensor Readings.", run);
             this->commands[message.get_command()]->handle_message(&message);
         }
-        */
+        
 
         run++;
         std::this_thread::sleep_for(std::chrono::milliseconds(500));

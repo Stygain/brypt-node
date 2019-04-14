@@ -21,6 +21,7 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <sys/ioctl.h>
 
@@ -172,8 +173,6 @@ static sf_t sf = SF7;
 
 // Set center frequency
 static uint32_t  freq = 868100000; // in Mhz! (868.1)
-
-static byte hello[32] = "HELLO";
 
 inline void die(const char *s)
 {
@@ -332,7 +331,7 @@ inline boolean receive(char *payload) {
     return true;
 }
 
-void receivepacket(bool sx1272) {
+inline char* receivepacket(bool sx1272) {
 
     long int SNR;
     int rssicorr;
@@ -361,20 +360,22 @@ void receivepacket(bool sx1272) {
                 rssicorr = 157;
             }
             
-            printf("Packet RSSI: %d, ", readReg(0x1A)-rssicorr);
-            printf("RSSI: %d, ", readReg(0x1B)-rssicorr);
-            printf("SNR: %li, ", SNR);
+            // printf("Packet RSSI: %d, ", readReg(0x1A)-rssicorr);
+            // printf("RSSI: %d, ", readReg(0x1B)-rssicorr);
+            // printf("SNR: %li, ", SNR);
             //printf("Length: %i", (int)receivedbytes);
             //printf("\n");
 			/*for(int i = 4; i < 256; i++){
 				temp[i-4] = message[i];
 			}*/
-            printf("Payload: %s\n", message);
+            //printf("Payload: %s\n", message);
 			//printf("Payload: %s\n", temp);
 
         } // received a message
 
     } // dio0=1
+
+    return message;
 }
 
 inline static void configPower(int8_t pw, bool sx1272) {

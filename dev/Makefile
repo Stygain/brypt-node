@@ -11,8 +11,8 @@ LWIRINGPI = -lwiringPi
 CXXLIBS = $(LZMQ) $(LPTHREAD) $(LOPENSSL_LIB) $(LOPENSSL_INCLUDE) $(LCRYPTO) $(LWIRINGPI)
 CXXFLAGS = -O2 -pedantic -Wall -Wextra -Wformat-security -std=c++11
 
-$(TARGET): test.o json11.o mqueue.o node.o command.o watcher.o
-	$(CXX) test.o json11.o mqueue.o node.o command.o watcher.o  -o $(TARGET) $(CXXFLAGS) $(CXXLIBS)
+$(TARGET): test.o json11.o mqueue.o node.o command.o watcher.o notifier.o
+	$(CXX) test.o json11.o mqueue.o node.o command.o watcher.o notifier.o -o $(TARGET) $(CXXFLAGS) $(CXXLIBS)
 
 test.o: test.cpp
 	$(CXX) -c test.cpp $(CXXFLAGS)
@@ -31,6 +31,9 @@ command.o: command.cpp
 
 watcher.o: watcher.cpp
 	$(CXX) -c watcher.cpp $(CXXFLAGS)
+
+notifier.o: notifier.cpp
+	$(CXX) -c notifier.cpp $(CXXFLAGS)
 
 run:
 	./$(TARGET)

@@ -65,6 +65,7 @@ class Connection {
     	virtual std::string get_type() = 0;
     	virtual void spawn() = 0;
     	virtual void worker() = 0;
+        virtual std::string get_internal_type() = 0;
     	virtual std::string recv(int flag = 0) = 0;
     	virtual void send(Message *) = 0;
     	virtual void send(const char * message) = 0;
@@ -243,6 +244,10 @@ class Direct : public Connection {
         void spawn() {
             std::cout << "== [Connection] Spawning DIRECT_TYPE connection thread\n";
             this->worker_thread = std::thread(&Direct::worker, this);
+        }
+
+        std::string get_internal_type() {
+            return "Direct";
         }
 
         void worker() {
@@ -449,6 +454,11 @@ class StreamBridge : public Connection {
 	    this->worker_thread = std::thread(&StreamBridge::worker, this);
 	}
 
+    std::string get_internal_type() {
+        return "StreamBridge";
+    }
+
+
 	void worker() {
 	    this->worker_active = true;
 	    this->create_pipe();
@@ -630,6 +640,10 @@ class TCP : public Connection {
 	    this->worker_thread = std::thread(&TCP::worker, this);
 	}
 
+    std::string get_internal_type() {
+        return "TCP";
+    }
+
 	void worker() {
 	    this->worker_active = true;
 	    this->create_pipe();
@@ -782,6 +796,10 @@ class Bluetooth : public Connection {
 
 	}
 
+    std::string get_internal_type() {
+        return "BLE";
+    }
+
 	void worker() {
 
 	}
@@ -813,68 +831,124 @@ class LoRa : public Connection {
         std::string id;
 
     public:
-	LoRa() {}
-	LoRa(struct Options *options){
-        std::cout << "== [Connection] Creating LoRa instance.\n";
+    	LoRa() {}
+    	LoRa(struct Options *options){
+            std::cout << "== [Connection] Creating LoRa instance.\n";
 
-        this->port = options->port;
-        this->peer_name = options->peer_name;
-        this->peer_addr = options->peer_addr;
-        this->peer_port = options->peer_port;
-        this->operation = options->operation;
-        this->id = options->id;
+            this->port = options->port;
+            this->peer_name = options->peer_name;
+            this->peer_addr = options->peer_addr;
+            this->peer_port = options->peer_port;
+            this->operation = options->operation;
+            this->id = options->id;
 
-	    switch (options->operation) {
-		case ROOT:
-		    std::cout << "== [LoRa] Setting up LoRa ROOT with id " << this->id << "\n";
-		    break;
-		case BRANCH:
-		    //TODO
-		    break;
-		case LEAF:
-		    std::cout << "== [LoRa] Setting up LoRa LEAF with id " << this->id << "\n";
-		    break;
-        case NO_OPER:
-            std::cout << "ERROR DEVICE OPERATION NEEDED" << "\n";
-            exit(0);
-            break;
-	    }
-	}
+            this->spawn();
 
-	void whatami() {
-	    std::cout << "I am a LoRa implementation." << '\n';
-	}
+            std::unique_lock<std::mutex> thread_lock(worker_mutex);
+            this->worker_conditional.wait(thread_lock, [this]{return this->worker_active;});
+            thread_lock.unlock();
+    	}
 
-    std::string get_type() {
-        return "LoRa";
-    }
+    	void whatami() {
+    	    std::cout << "I am a LoRa implementation." << '\n';
+    	}
 
-	void spawn() {
+        std::string get_type() {
+            return "LoRa";
+        }
 
-	}
+    	void spawn() {
+            std::cout << "== [LoRa] Spawning LORA_TYPE connection thread\n";
+            this->worker_thread = std::thread(&LoRa::worker, this);
+    	}
 
-	void worker() {
+        std::string get_internal_type() {
+            return "LoRa";
+        }
 
-	}
+    	void worker() {
+            this->worker_active = true;
+            this->create_pipe();
+            // LoRa initial setup
+            wiringPiSetup () ;
+            pinMode(ssPin, OUTPUT);
+            pinMode(dio0, INPUT);
+            pinMode(RST, OUTPUT);
 
-	void send(class Message * msg) {
-	    msg->get_pack();
+            wiringPiSPISetup(CHANNEL, 500000);
 
-	}
+            bool sx1272 = SetupLoRa();
 
-	void send(const char * message) {
-	    std::cout << "[Connection] Sent: " << message << '\n';
-	}
+            opmodeLora();
+            opmode(OPMODE_STANDBY);
+            writeReg(RegPaRamp, (readReg(RegPaRamp) & 0xF0) | 0x08); // set PA ramp-up time 50 uSec
+            configPower(23);
 
-	std::string recv(int flag){
-        if (flag) {}
+            // Notify the calling thread that the connection worker is ready
+            std::unique_lock<std::mutex> thread_lock(this->worker_mutex);
+            worker_conditional.notify_one();
+            thread_lock.unlock();
 
-	    return "Message";
-	}
+            unsigned int run = 0;
 
-	void shutdown() {
+            do {
+                std::string request = "";
+                // Receive message
+                //request = this->recv((int)sx1272);
+                //this->write_to_pipe(request);
 
-	}
+                // std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+                //this->response_needed = true;
+
+                // Wait for message from pipe then send
+                std::unique_lock<std::mutex> thread_lock(worker_mutex);
+                this->worker_conditional.wait(thread_lock, [this]{return !this->response_needed;});
+                thread_lock.unlock();
+
+                //std::string response = this->read_from_pipe();
+                std::string response = "HELLO";
+                this->send(response.c_str());
+
+                // Message response("1", this->peer_name, QUERY_TYPE, 1, "Message Response", run);
+                // this->send(&response);
+
+                run++;
+                std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+            } while(true);
+    	}
+
+    	void send(class Message * msg) {
+    	    std::cout << "[LoRa] Sending..." << '\n';
+            std::string msg_pack = msg->get_pack();
+            // LoRa send
+            std::cout << "[LoRa] Sent: (" << strlen(msg_pack.c_str()) << ") " << msg_pack << '\n';
+    	}
+
+    	void send(const char * message) {
+    	    std::cout << "[LoRa] Sending..." << '\n';
+            txlora(message, strlen(message));
+            clock_t t = clock();
+            while(((clock() - t)/CLOCKS_PER_SEC) < 0.1);
+            std::cout << "[LoRa] Sent: (" << strlen(message) << ") " << message << '\n';
+    	}
+
+    	std::string recv(int flag){
+            char message[256];
+            clock_t t = clock();
+            opmode(OPMODE_STANDBY);
+            opmode(OPMODE_RX);
+            while(((clock() - t)/CLOCKS_PER_SEC) < 0.1);
+            message = receivepacket((bool)flag);
+
+            std::string result(message);
+
+    	    return result;
+    	}
+
+    	void shutdown() {
+
+    	}
 };
 
 inline Connection* ConnectionFactory(TechnologyType technology) {

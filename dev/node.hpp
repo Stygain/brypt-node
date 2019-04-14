@@ -87,6 +87,7 @@ class Node {
         void setup(Options options);
         void setup();                                            // Setup the node
         Connection * setup_wifi_connection(std::string peer_id, std::string port);
+        Connection * setup_lora_connection(std::string peer_id, std::string port);
 
         // Getter Functions
         class Control * get_control();
