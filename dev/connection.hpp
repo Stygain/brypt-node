@@ -17,6 +17,7 @@
 
 #include "utility.hpp"
 #include "message.hpp"
+#include "lora.hpp"
 
 // TODO:
 // * Drop connections if the connected node does not match the intended device
@@ -805,18 +806,33 @@ class Bluetooth : public Connection {
 };
 
 class LoRa : public Connection {
+    private:
+        std::string port;
+        std::string peer_addr;
+        std::string peer_port;
+        std::string id;
+
     public:
 	LoRa() {}
 	LoRa(struct Options *options){
+        std::cout << "== [Connection] Creating LoRa instance.\n";
+
+        this->port = options->port;
+        this->peer_name = options->peer_name;
+        this->peer_addr = options->peer_addr;
+        this->peer_port = options->peer_port;
+        this->operation = options->operation;
+        this->id = options->id;
+
 	    switch (options->operation) {
 		case ROOT:
-		    std::cout << "Serving..." << "\n";
+		    std::cout << "== [LoRa] Setting up LoRa ROOT with id " << this->id << "\n";
 		    break;
 		case BRANCH:
-		    std::cout << "Serving..." << "\n";
+		    //TODO
 		    break;
 		case LEAF:
-		    std::cout << "Connecting..." << "\n";
+		    std::cout << "== [LoRa] Setting up LoRa LEAF with id " << this->id << "\n";
 		    break;
         case NO_OPER:
             std::cout << "ERROR DEVICE OPERATION NEEDED" << "\n";
@@ -894,7 +910,7 @@ inline Connection* ConnectionFactory(TechnologyType technology, Options *options
 	    return new Bluetooth();
 	    break;
 	case LORA_TYPE:
-	    return new LoRa();
+	    return new LoRa(options);
 	    break;
 	case TCP_TYPE:
 	    return new TCP(options);

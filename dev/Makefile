@@ -6,8 +6,9 @@ LPTHREAD = -lpthread
 LOPENSSL_LIB = -L/usr/local/opt/openssl/lib
 LOPENSSL_INCLUDE = -L/usr/local/opt/openssl/include/openssl
 LCRYPTO = -lcrypto
+LWIRINGPI = -lwiringPi
 
-CXXLIBS = $(LZMQ) $(LPTHREAD) $(LOPENSSL_LIB) $(LOPENSSL_INCLUDE) $(LCRYPTO)
+CXXLIBS = $(LZMQ) $(LPTHREAD) $(LOPENSSL_LIB) $(LOPENSSL_INCLUDE) $(LCRYPTO) $(LWIRINGPI)
 CXXFLAGS = -O2 -pedantic -Wall -Wextra -Wformat-security -std=c++11
 
 $(TARGET): test.o json11.o mqueue.o node.o command.o watcher.o
@@ -37,11 +38,18 @@ run:
 root:
 	./$(TARGET) --root -id 1 -type DIRECT -port 3005
 
+lora_root:
+	./$(TARGET) --root -id 1 -type LORA -port 3005
+
 leaf_two:
 	./$(TARGET) --leaf -id 2 -type DIRECT -port 4005 -peer 192.168.30.1 -pp 3005
 
 leaf_three:
 	./$(TARGET) --leaf -id 3 -type DIRECT -port 5005 -peer 192.168.30.1 -pp 3005
+
+lora_leaf:
+	leaf_two:
+	./$(TARGET) --leaf -id 2 -type LORA -port 4005 -peer 1 -pp 3005
 
 clean:
 	rm -f *.out *.o $(TARGET)
