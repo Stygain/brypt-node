@@ -879,10 +879,10 @@ class LoRa : public Connection {
 
             bool sx1272 = SetupLoRa();
 
-            opmodeLora();
+            opmodeLora(sx1272);
             opmode(OPMODE_STANDBY);
             writeReg(RegPaRamp, (readReg(RegPaRamp) & 0xF0) | 0x08); // set PA ramp-up time 50 uSec
-            configPower(23);
+            configPower(23, sx1272);
 
             // Notify the calling thread that the connection worker is ready
             std::unique_lock<std::mutex> thread_lock(this->worker_mutex);
@@ -926,20 +926,21 @@ class LoRa : public Connection {
     	}
 
     	void send(const char * message) {
+            byte* byte_message = reinterpret_cast<unsigned char*> message;
     	    std::cout << "[LoRa] Sending..." << '\n';
-            txlora(message, strlen(message));
+            txlora(byte_message, strlen(message));
             clock_t t = clock();
             while(((clock() - t)/CLOCKS_PER_SEC) < 0.1);
             std::cout << "[LoRa] Sent: (" << strlen(message) << ") " << message << '\n';
     	}
 
     	std::string recv(int flag){
-            char message[256];
+            char* message;
             clock_t t = clock();
             opmode(OPMODE_STANDBY);
             opmode(OPMODE_RX);
             while(((clock() - t)/CLOCKS_PER_SEC) < 0.1);
-            message = receivepacket((bool)flag);
+            message* = receivepacket((bool)flag);
 
             std::string result(message);
 
