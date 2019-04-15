@@ -894,7 +894,8 @@ class LoRa : public Connection {
             do {
                 std::string request = "";
                 // Receive message
-                //request = this->recv((int)sx1272);
+                request = this->recv((int)sx1272);
+                std::cout << "== [LoRa] request: " << request << '\n';
                 //this->write_to_pipe(request);
 
                 // std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -914,7 +915,7 @@ class LoRa : public Connection {
                 // this->send(&response);
 
                 run++;
-                std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+                std::this_thread::sleep_for(std::chrono::nanoseconds(5000));
             } while(true);
     	}
 

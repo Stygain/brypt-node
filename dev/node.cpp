@@ -530,7 +530,7 @@ void Node::listen(){
 
         // SIMULATE CLIENT REQUEST
         
-        if (run % 10 == 0) {
+        /*if (run % 10 == 0) {
             std::cout << "== [Node] Simulating client sensor Information request" << '\n';
             Message message("0xFFFFFFFF", this->state.self.id, INFORMATION_TYPE, 0, "Request for Network Information.", run);
             this->commands[message.get_command()]->handle_message(&message);
@@ -540,7 +540,7 @@ void Node::listen(){
             std::cout << "== [Node] Simulating client sensor Query request" << '\n';
             Message message("0xFFFFFFFF", this->state.self.id, QUERY_TYPE, 0, "Request for Sensor Readings.", run);
             this->commands[message.get_command()]->handle_message(&message);
-        }
+        }*/
         
 
         run++;
