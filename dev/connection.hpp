@@ -926,7 +926,7 @@ class LoRa : public Connection {
     	}
 
     	void send(const char * message) {
-            byte* byte_message = reinterpret_cast<unsigned char*> message;
+            byte* byte_message = (unsigned char*)message;
     	    std::cout << "[LoRa] Sending..." << '\n';
             txlora(byte_message, strlen(message));
             clock_t t = clock();
@@ -940,7 +940,7 @@ class LoRa : public Connection {
             opmode(OPMODE_STANDBY);
             opmode(OPMODE_RX);
             while(((clock() - t)/CLOCKS_PER_SEC) < 0.1);
-            message* = receivepacket((bool)flag);
+            message = receivepacket((bool)flag);
 
             std::string result(message);
 
