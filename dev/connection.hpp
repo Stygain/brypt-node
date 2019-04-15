@@ -892,24 +892,24 @@ class LoRa : public Connection {
             unsigned int run = 0;
 
             do {
-                std::string request = "";
+                // Wait for message from pipe then send
+                // std::unique_lock<std::mutex> thread_lock(worker_mutex);
+                // this->worker_conditional.wait(thread_lock, [this]{return !this->response_needed;});
+                // thread_lock.unlock();
+                // Send message
+                //std::string response = this->read_from_pipe();
+                std::string response = "HELLO";
+                this->send(response.c_str());
+
                 // Receive message
+                std::string request = "";
                 request = this->recv((int)sx1272);
                 std::cout << "== [LoRa] request: " << request << '\n';
                 //this->write_to_pipe(request);
 
-                // std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
                 //this->response_needed = true;
-
-                // Wait for message from pipe then send
-                std::unique_lock<std::mutex> thread_lock(worker_mutex);
-                this->worker_conditional.wait(thread_lock, [this]{return !this->response_needed;});
-                thread_lock.unlock();
-
-                //std::string response = this->read_from_pipe();
-                std::string response = "HELLO";
-                this->send(response.c_str());
 
                 // Message response("1", this->peer_name, QUERY_TYPE, 1, "Message Response", run);
                 // this->send(&response);
