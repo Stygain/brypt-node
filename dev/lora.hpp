@@ -360,15 +360,15 @@ inline char* receivepacket(bool sx1272) {
                 rssicorr = 157;
             }
             
-            // printf("Packet RSSI: %d, ", readReg(0x1A)-rssicorr);
-            // printf("RSSI: %d, ", readReg(0x1B)-rssicorr);
-            // printf("SNR: %li, ", SNR);
+            printf("Packet RSSI: %d, ", readReg(0x1A)-rssicorr);
+            printf("RSSI: %d, ", readReg(0x1B)-rssicorr);
+            printf("SNR: %li, ", SNR);
             //printf("Length: %i", (int)receivedbytes);
             //printf("\n");
 			/*for(int i = 4; i < 256; i++){
 				temp[i-4] = message[i];
 			}*/
-            //printf("Payload: %s\n", message);
+            printf("Payload: %s\n", message);
 			//printf("Payload: %s\n", temp);
 
         } // received a message
