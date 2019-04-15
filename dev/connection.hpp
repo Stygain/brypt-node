@@ -936,12 +936,17 @@ class LoRa : public Connection {
     	}
 
     	std::string recv(int flag){
+            std::cout << "In LoRa recv!" << '\n';
             char* message;
             clock_t t = clock();
+            std::cout << "clock t created!" << '\n';
             opmode(OPMODE_STANDBY);
             opmode(OPMODE_RX);
+            std::cout << "opmode set to receive!" << '\n';
             while(((clock() - t)/CLOCKS_PER_SEC) < 0.1);
+            std::cout << "Ready to receivepacket!" << '\n';
             message = receivepacket((bool)flag);
+            std::cout << "Message received!" << '\n';
 
             std::string result(message);
             std::cout << "After std::string create." << '\n';
