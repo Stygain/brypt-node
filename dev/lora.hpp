@@ -431,8 +431,6 @@ inline void txlora(byte *frame, byte datalen) {
     writeBuf(REG_FIFO, frame, datalen);
     // now we actually start the transmission
     opmode(OPMODE_TX);
-
-    printf("send: %s\n", frame);
 }
 
 #endif

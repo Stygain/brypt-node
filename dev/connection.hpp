@@ -944,7 +944,7 @@ class LoRa : public Connection {
             message = receivepacket((bool)flag);
 
             std::string result(message);
-
+            std::cout << "After std::string create." << '\n';
     	    return result;
     	}
 
