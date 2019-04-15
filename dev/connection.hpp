@@ -908,7 +908,7 @@ class LoRa : public Connection {
                 std::cout << "== [LoRa] request: " << request << '\n';
                 //this->write_to_pipe(request);
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
                 //this->response_needed = true;
 
@@ -916,7 +916,7 @@ class LoRa : public Connection {
                 // this->send(&response);
 
                 run++;
-                std::this_thread::sleep_for(std::chrono::nanoseconds(5000));
+                std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
                 fflush(stdout);
             } while(true);
     	}
@@ -924,10 +924,10 @@ class LoRa : public Connection {
     	void send(class Message * msg) {
     	    std::cout << "[LoRa] Sending..." << '\n';
             std::string msg_pack = msg->get_pack();
-            byte* byte_message = (unsigned char*)message.c_str();
+            byte* byte_message = (unsigned char*)msg_pack.c_str();
             txlora(byte_message, strlen((char*)byte_message));
             clock_t t = clock();
-            while(((clock() - t)/CLOCKS_PER_SEC) < 0.1);
+            while(((clock() - t)/CLOCKS_PER_SEC) < 0.5);
             std::cout << "[LoRa] Sent: (" << strlen(msg_pack.c_str()) << ") " << msg_pack << '\n';
     	}
 
@@ -936,7 +936,7 @@ class LoRa : public Connection {
     	    std::cout << "[LoRa] Sending..." << '\n';
             txlora(byte_message, strlen(message));
             clock_t t = clock();
-            while(((clock() - t)/CLOCKS_PER_SEC) < 0.1);
+            while(((clock() - t)/CLOCKS_PER_SEC) < 0.5);
             std::cout << "[LoRa] Sent: (" << strlen(message) << ") " << message << '\n';
     	}
 
@@ -945,7 +945,7 @@ class LoRa : public Connection {
             clock_t t = clock();
             opmode(OPMODE_STANDBY);
             opmode(OPMODE_RX);
-            while(((clock() - t)/CLOCKS_PER_SEC) < 0.1);
+            while(((clock() - t)/CLOCKS_PER_SEC) < 0.5);
             message = receivepacket((bool)flag);
 
             //std::string result(message);
