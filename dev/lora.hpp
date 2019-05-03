@@ -423,8 +423,8 @@ inline void txlora(byte *frame, byte datalen) {
     writeReg(REG_IRQ_FLAGS_MASK, ~IRQ_LORA_TXDONE_MASK);
 
     // initialize the payload size and address pointers
-    writeReg(REG_FIFO_TX_BASE_AD, 0x00);
-    writeReg(REG_FIFO_ADDR_PTR, 0x00);
+    writeReg(REG_FIFO_TX_BASE_AD, 0x80);
+    writeReg(REG_FIFO_ADDR_PTR, 0x80);
     writeReg(REG_PAYLOAD_LENGTH, datalen);
 
     // download buffer to the radio FIFO
