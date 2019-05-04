@@ -4,8 +4,25 @@
 #include <chrono>
 #include <sstream>
 #include <functional>
+#include <string>
 
 #include "utility.hpp"
+
+#include <openssl/conf.h>
+#include <openssl/err.h>
+#include <openssl/sha.h>
+#include <openssl/evp.h>
+#include <openssl/hmac.h>
+
+static const std::string base64_chars = 
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	"abcdefghijklmnopqrstuvwxyz"
+	"0123456789+/";
+
+// Base64 Encode/Decode source: https://github.com/ReneNyffenegger/cpp-base64
+static inline bool is_base64(unsigned char c) {
+    return (isalnum(c) || (c == '+') || (c == '/'));
+}
 
 class Message {
     private:
@@ -19,8 +36,11 @@ class Message {
         unsigned int phase;             // Phase of the Command state
 
         std::string data;               // Encrypted data to be sent
-        std::string timestamp;          // Current timestamp
+        unsigned int dataLen;		// Data length
+				
+	std::string timestamp;          // Current timestamp
 
+	std::string key;		//Key used for crypto
         Message * response;             // A circular message for the response to the current message
 
         std::string auth_token;         // Current authentication token created via HMAC
@@ -56,8 +76,10 @@ class Message {
         ** Description: Takes raw string input and unpacks it into the class variables.
         ** *************************************************************************/
         Message(std::string raw) {
-            this->raw = raw;
+            this->raw = this->base64_decode( raw );
+	    this->key = NET_KEY;
             this->unpack();
+	    // this->aes_ctr_256_decrypt(this->data, this->data.size());
             this->response = NULL;
         }
         /* **************************************************************************
@@ -74,8 +96,10 @@ class Message {
             this->timestamp = "";
             this->response = NULL;
             this->auth_token = "";
-            this->nonce = nonce;
+            this->nonce = NET_NONCE;
             this->set_timestamp();
+	    this->key = NET_KEY;  // In utility
+	    this->aes_ctr_256_encrypt(this->data, this->data.size());
         }
 
         // Getter Functions
@@ -144,7 +168,8 @@ class Message {
             if ( this->raw == "" ) {
                 this->pack();
             }
-            return this->raw + this->auth_token;
+	    std::string raw_pack = this->raw + this->auth_token;
+            return this->base64_encode( raw_pack, raw_pack.size() );
         }
         /* **************************************************************************
         ** Function: get_response
@@ -273,7 +298,7 @@ class Message {
 
             packed.append( 1, 4 );	// End of telemetry pack
 
-            this->auth_token = this->hmac( packed );
+            this->auth_token = this->hmac_blake2s( packed , packed.size() );
             this->raw = packed;
         }
         /* **************************************************************************
@@ -294,7 +319,9 @@ class Message {
                     // Source ID
                     case SOURCEID_CHUNK:
                         this->source_id = this->raw.substr( last_end + 2, ( chunk_end - 1 ) - ( last_end + 2) );
-                        break;
+                       
+		       	break;
+
                     // Destination ID
                     case DESTINATIONID_CHUNK:
                         this->destination_id = this->raw.substr( last_end + 2, ( chunk_end - 1 ) - ( last_end + 2) );
@@ -326,6 +353,7 @@ class Message {
                     // Data
                     case DATA_CHUNK:
                         this->data = this->raw.substr( last_end + 2, data_size );
+			this->aes_ctr_256_decrypt(this->data, this->data.size());
                         break;
                     // Timestamp
                     case TIMESTAMP_CHUNK:
@@ -360,47 +388,261 @@ class Message {
             std::cout << "== [Message] Destination: " << this->destination_id << '\n';
             std::cout << "== [Message] Await: " << this->await_id << '\n';
 
-        }
-        /* **************************************************************************
-        ** Function: hmac
-        ** Description: HMAC a provided message and return the authentication token.
-        ** *************************************************************************/
-        std::string hmac(std::string message) {
-            int key = 3005;
-        	std::stringstream token, inner, in_key, out_key;
+	    }
 
-        	unsigned long in_val = ( ( unsigned long ) key ^ ( 0x5c * 32 ) );      // Get the inner key
-        	unsigned long out_val = ( ( unsigned long ) key ^ ( 0x36 * 32 ) );     // Get the outer key
-        	in_key << in_val;
-        	out_key << out_val;
+	    /* **************************************************************************
+	     * ** Function: clear_buff
+	     * ** Description: Clears provided buffer
+	     * ** *************************************************************************/
+	     void clear_buff(unsigned char* buff, unsigned int buffLen){
+                 unsigned int i;
+		 for(i=0; i < buffLen; i++){
+			buff[i] = '\0';
+		 }
+	     }
 
-            inner << std::hash<std::string>{}( in_key.str() + message );
-            token << std::hash<std::string>{}( out_key.str() + inner.str() );      // Generate the HMAC
+	     /* **************************************************************************
+	     * ** Function: aes_ctr_256_encrypt
+	     * ** Description: Encrypt a provided message with AES-CTR-256 and return ciphert
+	     * ext.
+	     * ** *************************************************************************/
+	     std::string aes_ctr_256_encrypt(std::string message, unsigned int msg_len) {
+	         int length = 0;
+		 int data_len = 0;
 
-            // token = std::hash<std::string>{}(
-            //                 out_key.str() +
-            //                 std::hash<std::string>{}( in_key.str() + message )
-            //         );      // Generate the HMAC
+		 unsigned char ciphertext[1024];
+		 memset(ciphertext, '\0', 1024);
+		 
+		 unsigned char * plaintext = (unsigned char *) message.c_str();
+		
+		 unsigned char iv[16];
+		 std::string nonce_str = std::to_string(this->nonce);
+		 memcpy(iv, (unsigned char *) nonce_str.c_str(), nonce_str.size());
+		 memset(iv + nonce_str.size(), '\0', 16 - nonce_str.size());
 
-            return token.str();
-        }
-        /* **************************************************************************
-        ** Function: verify
-        ** Description: Compare the Message token with the computed HMAC.
-        ** *************************************************************************/
-        bool verify() {
-            bool verified = false;
-            std::string check_token = "";
+		 unsigned char * key = (unsigned char *) this->key.c_str();
 
-            if (this->raw != "" || this->auth_token != "") {
-                check_token = this->hmac( this->raw );
-                if (this->auth_token == check_token) {
-                    verified = true;
-                }
-            }
+		 EVP_CIPHER_CTX * ctx;
 
-            return verified;
-        }
+		 ctx = EVP_CIPHER_CTX_new();
+		 EVP_EncryptInit_ex( ctx, EVP_aes_256_ctr(), NULL, key, iv );
+		 EVP_EncryptUpdate( ctx, ciphertext, &length, plaintext, msg_len );
+
+		 data_len = length;
+		 EVP_EncryptFinal_ex( ctx, ciphertext + length, &length );
+		 data_len += length;
+
+		 EVP_CIPHER_CTX_free( ctx );
+
+		 std::string encrypted = "";
+		 for( int idx = 0; idx < data_len; idx++) {
+			 encrypted += static_cast<char>( ciphertext[idx] );
+		 }
+
+		 this->data = encrypted;
+
+		 return encrypted;	   	
+	     }
+	     
+	     /* **************************************************************************
+	     * ** Function: aes_ctr_256_decrypt
+	     * ** Description: Decrypt a provided message with AES-CTR-256 and return decrypt
+	     * ed text.	
+	     * ** *************************************************************************/
+	     std::string aes_ctr_256_decrypt(std::string message, unsigned int msg_len) {
+		     int length = 0;
+		     int data_len = 0;
+
+		     unsigned char plaintext[1024];
+		     memset( plaintext, '\0', 1024);
+
+		     unsigned char * ciphertext = (unsigned char *) message.c_str();
+
+		     unsigned char iv[16];
+		     std::string nonce_str = std::to_string(this->nonce);
+		     memcpy(iv, (unsigned char *) nonce_str.c_str(), nonce_str.size());
+		     memset(iv + nonce_str.size(), '\0', 16 - nonce_str.size());
+		     
+		     unsigned char * key = (unsigned char *) this->key.c_str();
+
+		    
+		     EVP_CIPHER_CTX * ctx;
+		     ctx = EVP_CIPHER_CTX_new();
+		     EVP_DecryptInit_ex( ctx, EVP_aes_256_ctr(), NULL, key, iv );
+		     EVP_DecryptUpdate( ctx, plaintext, &length, ciphertext, msg_len );
+		     
+		     data_len = length;
+		     EVP_DecryptFinal_ex( ctx, plaintext + length, &length );
+		     data_len += length;
+
+		     EVP_CIPHER_CTX_free( ctx );
+
+		     std::string decrypted = "";
+		     for(int idx = 0; idx < data_len; idx++) {
+			     decrypted += (char) plaintext[idx];
+		     }
+		     this->data = decrypted;
+
+		     return decrypted;
+	     }
+
+				/* **************************************************************************
+				 * ** Function: hmac_sha2
+				 * ** Description: HMAC SHA2 a provided message and return the authentication tok
+				 * en.
+				 * ** *************************************************************************/
+				std::string hmac_sha2(std::string mssgData, int mssgLen) {
+								const EVP_MD *md;
+								md = EVP_get_digestbyname("sha256");
+								const unsigned char* mssg = (const unsigned char*)mssgData.c_str();
+								const unsigned char* k = (const unsigned char*)key.c_str();
+								unsigned int length = 0;
+								unsigned char* d;
+								d = HMAC(md, k, this->key.size(), mssg, mssgLen, NULL, &length);
+								std::string cppDigest = (char*)d;
+								return cppDigest;
+				}
+
+				/* **************************************************************************
+				 * ** Function: hmac_blake2s
+				 * ** Description: HMAC Blake2s a provided message and return the authentication token.
+				 * ** *************************************************************************/
+				std::string hmac_blake2s(std::string mssgData, int mssgLen) {
+								const EVP_MD *md;
+								md = EVP_get_digestbyname("blake2s256");
+								const unsigned char* mssg = (const unsigned char*)mssgData.c_str();
+								const unsigned char* k = (const unsigned char*)key.c_str();
+								unsigned int length = 0;
+								unsigned char* d;
+								d = HMAC(md, k, this->key.size(), mssg, mssgLen, NULL, &length);
+								std::string cppDigest = (char*)d;
+								return cppDigest;
+				}
+/*
+				inner << std::hash<std::string>{}( in_key.str() + message );
+				token << std::hash<std::string>{}( out_key.str() + inner.str() );      // Generate the HMAC
+
+				// token = std::hash<std::string>{}(
+				//                 out_key.str() +
+				//                 std::hash<std::string>{}( in_key.str() + message )
+				//         );      // Generate the HMAC
+
+				return token.str();
+}*/
+
+/* **************************************************************************
+** Function: base64_encode
+** Description: Encode a std::string to a Base64 message
+** Source: https://github.com/ReneNyffenegger/cpp-base64/blob/master/base64.cpp#L45
+** *************************************************************************/
+std::string base64_encode(std::string message, unsigned int in_len) {
+    std::string encoded;
+    int idx = 0, jdx = 0;
+    unsigned char char_array_3[3], char_array_4[4];
+    unsigned char const * bytes_to_encode = reinterpret_cast<const unsigned char *>( message.c_str() );
+
+    while (in_len--) {
+	    char_array_3[idx++] = *(bytes_to_encode++);
+
+	    if(idx == 3) {
+		    char_array_4[0] = ( char_array_3[0] & 0xfc ) >> 2;
+		    char_array_4[1] = ( (char_array_3[0] & 0x03) << 4 ) + ( (char_array_3[1] & 0xf0) >> 4 );
+		    char_array_4[2] = ( (char_array_3[1] & 0x0f) << 2 ) + ( (char_array_3[2] & 0xc0) >> 6 );
+		    char_array_4[3] = char_array_3[2] & 0x3f;
+
+		    for (idx = 0; idx < 4; idx++) {
+			    encoded += base64_chars[char_array_4[idx]];
+		    }
+
+		    idx = 0;
+	    }
+    }
+
+    if (idx) {
+	    for (jdx = idx; jdx < 3; jdx++) {
+		    char_array_3[jdx] = '\0';
+	    }
+	   
+	    char_array_4[0] = ( char_array_3[0] & 0xfc ) >> 2;	
+	    char_array_4[1] = ( (char_array_3[0] & 0x03) << 4 ) + ( (char_array_3[1] & 0xf0) >> 4 );
+	    char_array_4[2] = ( (char_array_3[1] & 0x0f) << 2 ) + ( (char_array_3[2] & 0xc0) >> 6 );	    
+
+	    for (jdx = 0; jdx < idx + 1; jdx++) {
+		    encoded += base64_chars[char_array_4[jdx]];
+	    }
+
+	    while (idx++ < 3) {
+		    encoded += '=';
+	    }
+    }
+
+    return encoded;
+}
+
+/* **************************************************************************
+** Function: base64_decode
+** Description: Decode a Base64 message to a std::string
+** Source: https://github.com/ReneNyffenegger/cpp-base64/blob/master/base64.cpp#L87
+** *************************************************************************/
+std::string base64_decode(std::string const& message) {
+	std::string decoded;
+	int in_len = message.size();
+	int idx = 0, jdx = 0, in_ = 0;
+	unsigned char char_array_3[3], char_array_4[4];
+
+	while ( in_len-- && ( message[in_] != '=' ) && is_base64( message[in_] ) ) {
+		char_array_4[idx++] = message[in_]; in_++;
+		
+		if (idx == 4 ) {
+			for (idx = 0; idx < 4; idx++) {
+				char_array_4[idx] = base64_chars.find( char_array_4[idx] );
+			}
+
+			char_array_3[0] = ( char_array_4[0] << 2 ) + ( (char_array_4[1] & 0x30) >> 4 );
+			char_array_3[1] = ( (char_array_4[1] & 0x0f) << 4 ) + ( (char_array_4[2] & 0x3c) >> 2 );
+			char_array_3[2] = ( (char_array_4[2] & 0x03) << 6 ) + char_array_4[3];
+
+			for (idx = 0; idx < 3; idx++) {
+				decoded += char_array_3[idx];
+			}
+
+			idx = 0;
+		}
+	}
+
+	if (idx) {
+		for (jdx = 0; jdx < idx; jdx++) {
+			char_array_4[jdx] = base64_chars.find( char_array_4[jdx] );
+		}
+
+		char_array_3[0] = ( char_array_4[0] << 2 ) + ( (char_array_4[1] & 0x30) >> 4 );	
+		char_array_3[1] = ( (char_array_4[1] & 0x0f) << 4 ) + ( (char_array_4[2] & 0x3c) >> 2 );
+
+		for (jdx = 0; jdx < idx - 1; jdx++) {
+			decoded += char_array_3[jdx];
+		}
+	}
+
+	return decoded;
+}
+
+/* **************************************************************************
+ ** Function: verify
+ ** Description: Compare the Message token with the computed HMAC.
+ ** *************************************************************************/
+bool verify() {
+				bool verified = false;
+				std::string check_token = "";
+
+				if (this->raw != "" || this->auth_token != "") {
+								check_token = this->hmac_blake2s( this->raw, this->raw.size() );
+								if (this->auth_token == check_token) {
+												verified = true;
+								}
+				}
+
+				return verified;
+}
 };
 
 #endif

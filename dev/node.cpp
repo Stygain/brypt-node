@@ -422,8 +422,11 @@ void Node::handle_notification(std::string message) {
         std::size_t filter_found = message.find(":");
         if (filter_found != std::string::npos && filter_found < 16) {
             notice_filter = message.substr(0, filter_found);
-            raw_notification = message.substr(filter_found);
+            raw_notification = message.substr(filter_found + 1);
         }
+
+
+	//std::cout << "\n\n WHAT!?" << raw_notification << "\n\n";
 
         Message notification(raw_notification);
 
@@ -468,7 +471,7 @@ void Node::handle_fulfilled() {
     std::cout << "== [Node] Fulfulled requests:" << '\n';
     std::vector<class Message> responses = this->awaiting.get_fulfilled();
 
-    /*
+    
     for (auto it = responses.begin(); it != responses.end(); it++) {
         this->message_queue.add_message((*it).get_destination_id(), *it);
     }
@@ -478,7 +481,6 @@ void Node::handle_fulfilled() {
     for (auto it = responses.begin(); it != responses.end(); it++) {
         this->notify_connection((*it).get_destination_id());
     }
-    */
 
 }
 
