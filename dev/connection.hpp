@@ -930,8 +930,8 @@ class LoRa : public Connection {
                 // this->send(&response);
 
                 run++;
-                std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
-                fflush(stdout);
+                opmode(OPMODE_SLEEP);
+                std::this_thread::sleep_for(std::chrono::nanoseconds(5000));
             } while(true);
     	}
 
@@ -955,15 +955,17 @@ class LoRa : public Connection {
     	}
 
     	std::string recv(int flag){
-            char* message;
-            clock_t t = clock();
+            const char* message = "";
             opmode(OPMODE_STANDBY);
             opmode(OPMODE_RX);
+            clock_t t = clock();
             while(((clock() - t)/CLOCKS_PER_SEC) < 0.5);
             message = receivepacket((bool)flag);
+            while(!strcmp(message, ""));
 
-            //std::string result(message);
-    	    return "Hello world!";
+            std::string result(message);
+    	    //return "Hello world!";
+            return result;
     	}
 
     	void shutdown() {
