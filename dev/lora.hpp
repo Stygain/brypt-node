@@ -331,7 +331,7 @@ inline boolean receive(char *payload) {
     return true;
 }
 
-inline char* receivepacket(bool sx1272) {
+inline std::string receivepacket(bool sx1272) {
 
     long int SNR;
     int rssicorr;
@@ -369,13 +369,15 @@ inline char* receivepacket(bool sx1272) {
 				temp[i-4] = message[i];
 			}*/
             printf("Payload: %s\n", message);
+            std::string result(message);
+            return result;
 			//printf("Payload: %s\n", temp);
 
         } // received a message
 
     } // dio0=1
 
-    return message;
+    return "";
 }
 
 inline static void configPower(int8_t pw, bool sx1272) {

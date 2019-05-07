@@ -905,16 +905,28 @@ class LoRa : public Connection {
 
             unsigned int run = 0;
 
+            clock_t send_diff = clock();
+
+            opmode(OPMODE_STANDBY);
+            opmode(OPMODE_RX);
+
             do {
-                opmode(OPMODE_STANDBY);
                 // Wait for message from pipe then send
                 // std::unique_lock<std::mutex> thread_lock(worker_mutex);
                 // this->worker_conditional.wait(thread_lock, [this]{return !this->response_needed;});
                 // thread_lock.unlock();
                 // Send message
                 //std::string response = this->read_from_pipe();
-                std::string response = "HELLO";
-                this->send(response.c_str());
+                if(((clock() - send_diff)/CLOCKS_PER_SEC) >= 5){
+                    opmode(OPMODE_STANDBY);
+                    // std::string response = "HELLO";
+                    // this->send(response.c_str());
+                    Message response("1", this->peer_name, QUERY_TYPE, 1, "HELLO", run);
+                    this->send(&response);
+                    send_diff = clock();
+                    opmode(OPMODE_STANDBY);
+                    opmode(OPMODE_RX);
+                }
 
                 // Receive message
                 std::string request = "";
@@ -926,12 +938,10 @@ class LoRa : public Connection {
 
                 //this->response_needed = true;
 
-                // Message response("1", this->peer_name, QUERY_TYPE, 1, "Message Response", run);
-                // this->send(&response);
+                
 
                 run++;
-                opmode(OPMODE_SLEEP);
-                std::this_thread::sleep_for(std::chrono::nanoseconds(5000));
+                //std::this_thread::sleep_for(std::chrono::nanoseconds(5000));
             } while(true);
     	}
 
@@ -955,17 +965,15 @@ class LoRa : public Connection {
     	}
 
     	std::string recv(int flag){
-            const char* message = "";
-            opmode(OPMODE_STANDBY);
-            opmode(OPMODE_RX);
+            std::string message = "";
             clock_t t = clock();
             while(((clock() - t)/CLOCKS_PER_SEC) < 0.5);
-            message = receivepacket((bool)flag);
-            while(!strcmp(message, ""));
+            message += receivepacket((bool)flag);
+            //if(!strcmp(message, "")) std::cout << "Message: " << message << '\n';
 
-            std::string result(message);
+            //std::string result(message);
     	    //return "Hello world!";
-            return result;
+            return message;
     	}
 
     	void shutdown() {
