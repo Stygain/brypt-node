@@ -16,6 +16,9 @@ void setup() {
 
   LoRa.setPins(8,4,7);
 
+  // Turn the LED on in order to indicate that the upload is complete
+  pinMode(13, OUTPUT);
+  
   if(!LoRa.begin(868100000)){
     //Serial.println("Starting LoRa failed!");
     while(1);
@@ -29,11 +32,13 @@ void setup() {
 }
 
 void loop() {
-  if(runEvery(5000)){
+  String data;
+  data.reserve(5);
+  if(runEvery(2500)){
     //Serial.print("Sending packet: ");
-    String data = "65.2";
+    data = "23.1";
     LoRa_sendMessage(data);
-    Serial.println(data + " " + NET_NONCE);
+    // Serial.println(data + " " + NET_NONCE);
   }
 }
 
@@ -48,10 +53,13 @@ void LoRa_txMode(){
 }
 
 void LoRa_sendMessage(String data){
+  String response;
+  response.reserve(128);
   LoRa_txMode();
   Message message("2", "1", QUERY_TYPE, 1, data, NET_NONCE);
-  String response = message.get_pack();
-  Serial.println("In send after get_pack");
+  Serial.println("In send after constructor");
+  response = message.get_pack();
+  Serial.println("In send after get_pack4");
   LoRa.beginPacket();
   LoRa.print(response);
   LoRa.endPacket();
@@ -69,8 +77,8 @@ void onReceive(int packetSize){
 
   Message message(received);
   
-  Serial.print("Message Received: ");
-  Serial.println(message.get_data());
+   Serial.print("Message Received: ");
+   Serial.println(message.get_data());
 }
 
 boolean runEvery(unsigned long interval){
