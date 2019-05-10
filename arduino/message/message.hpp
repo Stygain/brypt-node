@@ -338,7 +338,7 @@ class Message {
 			packed = packed + (char)4;
 
 			// Serial.println("Calling hmac on the packed message");
-			//this->auth_token = this->hmac_blake2s( packed );
+			this->auth_token = this->hmac_blake2s( packed );
 			// Serial.println("After hmac, setting raw to packed");
 			this->raw = packed;
 		}

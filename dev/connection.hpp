@@ -916,7 +916,6 @@ class LoRa : public Connection {
                 // this->worker_conditional.wait(thread_lock, [this]{return !this->response_needed;});
                 // thread_lock.unlock();
                 // Send message
-                //std::string response = this->read_from_pipe();
                 if(((clock() - send_diff)/CLOCKS_PER_SEC) >= 5){
                     opmode(OPMODE_STANDBY);
                     // std::string response = "HELLO";
@@ -932,7 +931,7 @@ class LoRa : public Connection {
                 std::string request = "";
                 request = this->recv((int)sx1272);
                 std::cout << "== [LoRa] request: " << request << '\n';
-                //this->write_to_pipe(request);
+                this->write_to_pipe(request);
 
                 //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
@@ -965,15 +964,16 @@ class LoRa : public Connection {
     	}
 
     	std::string recv(int flag){
-            std::string message = "";
+            std::string received = "";
             clock_t t = clock();
             while(((clock() - t)/CLOCKS_PER_SEC) < 0.5);
-            message += receivepacket((bool)flag);
+            received += receivepacket((bool)flag);
+            Message message(received);
             //if(!strcmp(message, "")) std::cout << "Message: " << message << '\n';
 
             //std::string result(message);
     	    //return "Hello world!";
-            return message;
+            return message.get_data();
     	}
 
     	void shutdown() {
