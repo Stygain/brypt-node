@@ -18,17 +18,18 @@ enum CommandType { INFORMATION_TYPE, QUERY_TYPE, ELECTION_TYPE, TRANSFORM_TYPE, 
 enum DeviceSocketCapability { MASTER, SLAVE };
 
 // Super Secure NET_KEY
-const String NET_KEY = "01234567890123456789012345678901";
-const unsigned int NET_NONCE = 998;
-
-// Central Authority Connection Constants
-const String CA_DOMAIN = "brypt.com";
-const String CA_SUBDOMAIN = "bridge";
-const String CA_PORT = "8080";
-const String CA_PROTOCOL = "https://";
-const unsigned int PORT_GAP = 16;
+const String NET_KEY PROGMEM = "01234567890123456789012345678901";
+const unsigned int NET_NONCE PROGMEM = 998;
 
 const String ID_SEPERATOR = ";";
+/*
+// Central Authority Connection Constants
+const String CA_DOMAIN PROGMEM = "brypt.com";
+const String CA_SUBDOMAIN PROGMEM = "bridge";
+const String CA_PORT PROGMEM = "8080";
+const String CA_PROTOCOL PROGMEM = "https://";
+const unsigned int PORT_GAP PROGMEM = 16;
+
 
 struct Options {
     bool run_tests;
@@ -50,5 +51,5 @@ struct Options {
 //
 // 	return cs;
 // }
-
+*/
 #endif

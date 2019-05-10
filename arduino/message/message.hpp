@@ -46,7 +46,7 @@ class Message {
 		String data;               // Encrypted data to be sent
 		String timestamp;          // Current timestamp
 
-		Message * response;             // A circular message for the response to the current message
+		//Message * response;             // A circular message for the response to the current message
 
 		String auth_token;         // Current authentication token created via HMAC
 		unsigned int nonce;             // Current message nonce
@@ -72,7 +72,7 @@ class Message {
 			this->phase = -1;
 			this->data = "";
 			this->timestamp = "";
-			this->response = NULL;
+			//this->response = NULL;
 			this->auth_token = "";
 			this->nonce = 0;
 			this->set_timestamp();
@@ -92,7 +92,7 @@ class Message {
 			this->key = NET_KEY;
 			
 			this->unpack();
-			this->response = NULL;
+			//this->response = NULL;
 		}
 		
 		/* **************************************************************************
@@ -107,7 +107,7 @@ class Message {
 			this->phase = phase;
 			this->data = data;
 			this->timestamp = "";
-			this->response = NULL;
+			//this->response = NULL;
 			this->auth_token = "";
 			this->nonce = nonce;
 			this->set_timestamp();
@@ -190,21 +190,23 @@ class Message {
 				// Serial.println("Calling pack");
 				this->pack();
 			}
-			// Serial.println("Appending auth token");
-			String raw_pack = this->raw + this->auth_token;
-			// Serial.println("Calling base64 encode");
+			Serial.println("Appending auth token");
+			String raw_pack;
+			raw_pack.reserve(160);
+			raw_pack = this->raw + this->auth_token;
+			Serial.println("Calling base64 encode");
 			return this->base64_encode( raw_pack, raw_pack.length() );
 		}
 		/* **************************************************************************
 		 ** Function: get_response
 		 ** Description: Return the Response for the message.
 		 ** *************************************************************************/
-		String get_response() {
+		/*String get_response() {
 			if ( this->response == NULL ) {
 				return "";
 			}
 			return this->response->get_pack();
-		}
+		}*/
 
 		// Setter Functions
 		/* **************************************************************************
@@ -277,7 +279,7 @@ class Message {
 		 ** Description: Set the message Response provided the data content and sending
 		 ** Node ID.
 		 ** *************************************************************************/
-		void set_response(String source_id, String data) {
+		/*void set_response(String source_id, String data) {
 			if (this->response == NULL) {
 				this->response = new Message(source_id, this->source_id, this->command, this->phase + 1, data, this->nonce + 1);
 			} else {
@@ -287,7 +289,7 @@ class Message {
 				this->response->set_data( data );
 				this->response->set_nonce( this->nonce + 1 );
 			}
-		}
+		}*/
 		
 		// Utility Functions
 		/* **************************************************************************
@@ -322,7 +324,7 @@ class Message {
 		 ** *************************************************************************/
 		void pack() {
 			String packed;
-			packed.reserve(128);
+			packed.reserve(160);
 			// Serial.println("Pack called");
 
 			packed = packed + (char)1;
@@ -338,7 +340,7 @@ class Message {
 			packed = packed + (char)4;
 
 			// Serial.println("Calling hmac on the packed message");
-			//this->auth_token = this->hmac_blake2s( packed );
+			this->auth_token = this->hmac_blake2s( packed );
 			// Serial.println("After hmac, setting raw to packed");
 			this->raw = packed;
 		}
@@ -454,7 +456,7 @@ class Message {
 			h->resetHMAC(tmpkey, 32);
 			h->update((const void *)mssgptr, (size_t)mlen);
 			h->finalizeHMAC((const void *)tmpkey, (size_t)mlen, (void *)result, (size_t)HASH_SIZE);
-			Serial.println(result[0]);
+			// Serial.println(result[0]);
 			String trueres;
 			trueres = String((char *)result);
 			return trueres;
@@ -520,6 +522,8 @@ class Message {
 		}
 		
 		String encrypt(String plaintext){
+			// Serial.println("Starting encrypt");
+			
 			// Serial.println("ENCRYPT");
 			CTR<AES128> aes_ctr_128;
 			// Serial.println("CTR created");
@@ -570,6 +574,7 @@ class Message {
 		}
 		
 		String decrypt(String ciphertext){
+			// Serial.println("Starting decrypt");
 			
 			byte ctxt[128];
 			memset(ctxt, '\0', 128);
@@ -638,12 +643,14 @@ class Message {
 		** Source: https://github.com/ReneNyffenegger/cpp-base64/blob/master/base64.cpp#L45
 		** *************************************************************************/
 		String base64_encode(String message, unsigned int in_len) {
+		  // Serial.println("Starting base64 encode");
 		  // Serial.println("Going to encode");
 		  // Serial.print("Message to encode: ");
 		  // Serial.println(message);
 		  // Serial.print("Message length: ");
 		  // Serial.println(in_len);
 		  String encoded;
+		  encoded.reserve(160);
 		  int idx = 0, jdx = 0;
 		  unsigned char char_array_3[3], char_array_4[4];
 		  unsigned char const * bytes_to_encode = reinterpret_cast<const unsigned char *>( message.c_str() );
@@ -694,7 +701,9 @@ class Message {
 		** Source: https://github.com/ReneNyffenegger/cpp-base64/blob/master/base64.cpp#L87
 		** *************************************************************************/
 		String base64_decode(String const& message) {
+		  // Serial.println("Starting base64 decode");
 		  String decoded;
+		  decoded.reserve(160);
 		  int in_len = message.length();
 		  int idx = 0, jdx = 0, in_ = 0;
 		  unsigned char char_array_3[3], char_array_4[4];
