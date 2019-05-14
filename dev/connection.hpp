@@ -928,9 +928,13 @@ class LoRa : public Connection {
                 }
 
                 // Receive message
-                std::string request = "";
-                request = this->recv((int)sx1272);
-                std::cout << "== [LoRa] request: " << request << '\n';
+                std::string received = "";
+                received = this->recv((int)sx1272);
+                if(received.size >= 48){
+                    received.erase(48, received.size()-1);
+                    Message message(received);
+                }
+                std::cout << "== [LoRa] request: " << received << '\n';
                 this->write_to_pipe(request);
 
                 //std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -968,12 +972,8 @@ class LoRa : public Connection {
             clock_t t = clock();
             while(((clock() - t)/CLOCKS_PER_SEC) < 0.5);
             received += receivepacket((bool)flag);
-            Message message(received);
-            //if(!strcmp(message, "")) std::cout << "Message: " << message << '\n';
 
-            //std::string result(message);
-    	    //return "Hello world!";
-            return message.get_data();
+            return received;
     	}
 
     	void shutdown() {
