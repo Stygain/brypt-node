@@ -12,6 +12,7 @@
 
 #include <Hash.h>
 //#include <SHA128.h>
+//#include <SHA256.h>
 #include <BLAKE2s.h>
 #include <AES.h>
 #include <CTR.h>
@@ -431,7 +432,8 @@ class Message {
 		 ** Function: hmac
 		 ** Description: HMAC a provided message and return the authentication token.
 		 ** *************************************************************************/
-		
+
+
 		String hmac(String mssg){
 			unsigned char result[HASH_SIZE];
 			unsigned char tmpres[HASH_SIZE];
@@ -494,9 +496,9 @@ class Message {
 			memset(hmac_mssg, '\0', 128);
 			message.getBytes(hmac_mssg, 128);
 			
-			byte key128[33];
-			memset(key128, '\0', 33);
-			NET_KEY.getBytes(key128, 33);
+			byte key256[33];
+			memset(key256, '\0', 33);
+			NET_KEY.getBytes(key256, 33);
 			
 			BLAKE2s blake2s;
 			byte buffer[128];
@@ -506,83 +508,71 @@ class Message {
 			memset(result, 0x00, sizeof(result));
 
 			// This one matches what is on the other devices
-			this->hmac(&blake2s, key128, result, hmac_mssg);
+			this->hmac(&blake2s, key256, result, hmac_mssg);
 			String cpystr2((char *)result);
 			String str2 = cpystr2;
-			// Serial.print("Key bytes: ");
-			// Serial.println(str2);
-			// Serial.println("Key bytes ints: ");
-			for (int idx = 0; idx < 32; idx++) {
-				// Serial.print((int)(str2.charAt(idx)));
-				// Serial.print(" ");
-			}
-			// Serial.println("");
+			//Serial.print("Key bytes: ");
+			//Serial.println(str2);
+			//Serial.println("Key bytes ints: ");
+			//for (int idx = 0; idx < 32; idx++) {
+			//	Serial.print((int)(str2.charAt(idx)));
+			//	Serial.print(" ");
+			//}
+			//Serial.println("");
 			
 			return str2;
 		}
 		
 		String encrypt(String plaintext){
-			// Serial.println("Starting encrypt");
-			
-			// Serial.println("ENCRYPT");
-			CTR<AES128> aes_ctr_128;
-			// Serial.println("CTR created");
+			//Serial.println("ENCRYPT");
+			CTR<AES256> aes_ctr_256;
 			byte ctxt[128];
 			memset(ctxt, 0x00, sizeof(ctxt));
-			// Serial.println("After variables");
 
 			crypto_feed_watchdog();
-			// Serial.println("After watchdog");
 			
 			byte key[33];
 			memset(key, '\0', 33);
-			// Serial.println("After memset");
 			NET_KEY.getBytes(key, 33);
-			// Serial.println("Got key");
-			aes_ctr_128.setKey(key, 32);
-			// Serial.println("Key set");
+			aes_ctr_256.setKey(key, 32);
 			
 			byte iv[16];
 			memset(iv, '\0', 16);
 			String nonce(NET_NONCE);
-			// Serial.println("got nonce");
 			nonce.getBytes(iv, 16);
-			// Serial.println("Got IV");
-			aes_ctr_128.setIV(iv, 16);
-			aes_ctr_128.setCounterSize(4);
+			aes_ctr_256.setIV(iv, 16);
+			aes_ctr_256.setCounterSize(4);
 			
 			byte mssg[128];
 			memset(mssg, '\0', 128);
 			plaintext.getBytes(mssg, 128);
-			// Serial.println("Set message");
-			aes_ctr_128.encrypt(ctxt, mssg, strlen((const char *)mssg));
-			// Serial.println("After encrypt");
+			aes_ctr_256.encrypt(ctxt, mssg, strlen((const char *)mssg));
 			
 			String cpystr((char *)ctxt);
 			String ciphertext = cpystr;
-			// Serial.print("Ciphertext: ");
-			// Serial.println(ciphertext);
+			//Serial.print("Ciphertext: ");
+			//Serial.println(ciphertext);
 			
-			// Serial.print("Encrypted bytes: ");
-			// for (int idx = 0; idx < ciphertext.length(); idx++) {
-				// Serial.print((int)(ciphertext.charAt(idx)));
-				// Serial.print(" ");
-			// }
-			// Serial.println("");
-
+			//Serial.print("Encrypted bytes: ");
+			//for (int idx = 0; idx < ciphertext.length(); idx++) {
+			//	Serial.print((int)(ciphertext.charAt(idx)));
+			//	Serial.print(" ");
+			//}
+			//Serial.println("");
+			
 			return ciphertext;
 		}
 		
 		String decrypt(String ciphertext){
-			// Serial.println("Starting decrypt");
 			
 			byte ctxt[128];
 			memset(ctxt, '\0', 128);
 			ciphertext.getBytes(ctxt, 128);
 			
-			// Serial.println("DECRYPT");
+			//Serial.println("DECRYPT");
 			byte buffer[128];
-			CTR<AES128> aes_ctr_128;
+			CTR<AES256> aes_ctr_256;
+		
 			memset(buffer, 0x00, sizeof(ctxt));
 
 			crypto_feed_watchdog();
@@ -590,29 +580,30 @@ class Message {
 			byte key[33];
 			memset(key, '\0', 33);
 			NET_KEY.getBytes(key, 33);
-			aes_ctr_128.setKey(key, 32);
+			aes_ctr_256.setKey(key, 32);
 			
 			byte iv[16];
 			memset(iv, '\0', 16);
 			String nonce(NET_NONCE);
 			nonce.getBytes(iv, 16);
-			aes_ctr_128.setIV(iv, 16);
-			aes_ctr_128.setCounterSize(4);
+
+			aes_ctr_256.setIV(iv, 16);
+			aes_ctr_256.setCounterSize(4);
 			
-			aes_ctr_128.decrypt(buffer, ctxt, strlen((const char *)ctxt));
+			aes_ctr_256.decrypt(buffer, ctxt, strlen((const char *)ctxt));
 			
 			String cpystr((char *)buffer);
 			String plain = cpystr;
-			// Serial.print("Plaintext: ");
-			// Serial.println(plain);
+			//Serial.print("Plaintext: ");
+			//Serial.println(plain);
 			
 			
-			// Serial.print("Decrypted bytes: ");
-			for (int idx = 0; idx < plain.length(); idx++) {
-				// Serial.print((int)(plain.charAt(idx)));
-				// Serial.print(" ");
-			}
-			// Serial.println("");
+			//Serial.print("Decrypted bytes: ");
+			//for (int idx = 0; idx < plain.length(); idx++) {
+			//	Serial.print((int)(plain.charAt(idx)));
+			//	Serial.print(" ");
+			//}
+			//Serial.println("");
 			
 			this->data = plain;
 			

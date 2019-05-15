@@ -12,6 +12,7 @@
 class Notifier {
     private:
         struct State * node_state;
+
         class Node* node_instance;
 
         zmq::context_t context;
@@ -25,22 +26,16 @@ class Notifier {
         bool subscribed = false;
 
     public:
-    	Notifier(struct State * state, class Node* node_instance, std::string port);
-
+    	Notifier(struct State * state, class Node * node_instance, std::string port);
     	void restart();
-
         std::string get_prefix(NotificationType type);
-
         void connect(std::string ip, std::string port);
-
     	// Passthrough for send function of the connection type
         // Update to target sub clusters and nodes in the prefix
     	void send(Message * message, NotificationType type);
-
         // Passthrough for send function of the connection type
         // Update to target sub clusters and nodes in the prefix
         void send(std::string message, NotificationType type);
-
         // Receive for requests, if a request is received recv it and then return the message string
         std::string recv();
 

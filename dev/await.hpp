@@ -11,7 +11,6 @@
 #include "json11.hpp"
 
 typedef std::unordered_map<std::string, class AwaitObject> AwaitMap;
-// const std::chrono::milliseconds AWAIT_TIMEOUT = std::chrono::milliseconds(500);
 const std::chrono::milliseconds AWAIT_TIMEOUT = std::chrono::milliseconds(1500);
 
 class AwaitObject {
@@ -19,21 +18,44 @@ class AwaitObject {
         bool fulfilled;
         unsigned int expected_responses;
         unsigned int received_responses;
+        std::string source_id;
         class Message request;
         json11::Json::object aggregate_object;
         SystemClock expire;
 
     public:
-        AwaitObject(class Message request, unsigned int expected_responses) {
+        AwaitObject(class Message request, std::vector<std::string> * peer_names, unsigned int expected_responses) {
+            this->fulfilled = false;
+            this->received_responses = 0;
+            this->expected_responses = expected_responses;
+            this->request = request;
+            this->source_id = this->request.get_source_id();
+            this->expire = get_system_clock() + AWAIT_TIMEOUT;
+            if (peer_names != NULL) {
+                this->instantiate_response_object(peer_names);
+            }
+        }
+
+        AwaitObject(class Message request, std::string * peer_name, unsigned int expected_responses) {
             this->fulfilled = false;
             this->received_responses = 0;
             this->expected_responses = expected_responses;
             this->request = request;
             this->expire = get_system_clock() + AWAIT_TIMEOUT;
+            this->aggregate_object[(*peer_name)] = "Unfulfilled";
+        }
+
+        void instantiate_response_object(std::vector<std::string> * peer_names) {
+            std::vector<std::string>::iterator name_it = peer_names->begin();
+            for (name_it; name_it != peer_names->end(); name_it++) {
+                if ((*name_it) == this->source_id) {
+                    continue;
+                }
+                this->aggregate_object[(*name_it)] = "Unfulfilled";
+            }
         }
 
         bool ready() {
-
             if (this->expected_responses == this->received_responses) {
                 this->fulfilled = true;
             } else {
@@ -60,16 +82,21 @@ class AwaitObject {
                 this->request.get_phase() + 1,
                 data,
                 this->request.get_nonce() + 1
-            );
+             );
 
-            return response;
+             return response;
         }
 
         bool update_response(class Message response) {
+            if (this->aggregate_object[response.get_source_id()].dump() != "\"Unfulfilled\"") {
+                printo("Unexpected node response", AWAIT_P);
+                return this->fulfilled;
+            }
+
             this->aggregate_object[response.get_source_id()] = response.get_pack();
 
             this->received_responses++;
-            if (this->received_responses == this->expected_responses) {
+            if (this->received_responses >= this->expected_responses) {
                 this->fulfilled = true;
             }
 
@@ -100,12 +127,22 @@ class AwaitContainer {
         }
 
     public:
-        std::string push_request(class Message message, unsigned int expected_responses) {
+        std::string push_request(class Message message, std::vector<std::string> * peer_names, unsigned int expected_responses) {
             std::string key = "";
 
             key = this->key_generator(message.get_pack());
-            std::cout << "== [Await] Pushing AwaitObject with key: " << key << '\n';
-            this->awaiting.emplace(key, AwaitObject(message, expected_responses));
+            printo("Pushing AwaitObject with key: " + key, AWAIT_P);
+            this->awaiting.emplace(key, AwaitObject(message, peer_names, expected_responses));
+
+            return key;
+        }
+
+        std::string push_request(class Message message, std::string * peer_name, unsigned int expected_responses) {
+            std::string key = "";
+
+            key = this->key_generator(message.get_pack());
+            printo("Pushing AwaitObject with key: " + key, AWAIT_P);
+            this->awaiting.emplace(key, AwaitObject(message, peer_name, expected_responses));
 
             return key;
         }
@@ -113,10 +150,10 @@ class AwaitContainer {
         bool push_response(std::string key, class Message message) {
             bool success = true;
 
-            std::cout << "== [Await] Pushing response to AwaitObject " << key << '\n';
+	        printo("Pushing response to AwaitObject " + key, AWAIT_P);
             bool fulfilled = this->awaiting.at(key).update_response(message);
             if (fulfilled) {
-                std::cout << "== [Await] AwaitObject has been fulfilled, Waiting to transmit" << '\n';
+                printo("AwaitObject has been fulfilled, Waiting to transmit", AWAIT_P);
             }
 
             return success;
@@ -126,10 +163,10 @@ class AwaitContainer {
             bool success = true;
 
             std::string key = message.get_await_id();
-            std::cout << "== [Await] Pushing response to AwaitObject " << key << '\n';
+            printo("Pushing response to AwaitObject " + key, AWAIT_P);
             bool fulfilled = this->awaiting.at(key).update_response(message);
             if (fulfilled) {
-                std::cout << "== [Await] AwaitObject has been fulfilled, Waiting to transmit" << '\n';
+                printo("AwaitObject has been fulfilled, Waiting to transmit", AWAIT_P);
             }
 
             return success;
@@ -140,7 +177,7 @@ class AwaitContainer {
             fulfilled.reserve(this->awaiting.size());
 
             for ( auto it = this->awaiting.begin(); it != this->awaiting.end(); ) {
-                std::cout << "== [Await] Checking AwaitObject " << it->first << '\n';
+                printo("Checking AwaitObject " + it->first, AWAIT_P);
                 if (it->second.ready()) {
                     class Message response = it->second.get_response();
                     std::cout << response.get_data() << '\n';
