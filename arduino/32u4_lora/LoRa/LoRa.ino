@@ -32,15 +32,24 @@ void setup() {
 }
 
 void loop() {
-  String data;
-  data.reserve(5);
-  if(runEvery(2500)){
-    //Serial.print("Sending packet: ");
-    data = "23.1";
-    LoRa_sendMessage(data);
-    // Serial.println(data + " " + NET_NONCE);
-  }
+//  if(runEvery(  5000)){
+//    sendMessage();
+//  }
 }
+
+//void sendMessage(){
+//  String data PROGMEM = "68";
+//  LoRa_txMode();
+//  String response;
+//  response.reserve(160);
+//  Message outgoing("2", "1", QUERY_TYPE, 1, data, NET_NONCE);
+//  response = outgoing.get_pack();
+//  Serial.println("response = " + response);
+//  LoRa.beginPacket();
+//  LoRa.print(response);
+//  LoRa.endPacket();
+//  LoRa_rxMode();
+//}
 
 void LoRa_rxMode(){
   //LoRa.enableInvertIQ();
@@ -52,41 +61,43 @@ void LoRa_txMode(){
   //LoRa.disableInvertIQ();
 }
 
-void LoRa_sendMessage(String data){
-  String response;
-  response.reserve(128);
-  LoRa_txMode();
-  Message message("2", "1", QUERY_TYPE, 1, data, NET_NONCE);
-  Serial.println("In send after constructor");
-  response = message.get_pack();
-  Serial.println("In send after get_pack4");
-  LoRa.beginPacket();
-  LoRa.print(response);
-  LoRa.endPacket();
-  LoRa_rxMode();
-}
-
 void onReceive(int packetSize){
   String received;
-  received.reserve(128);
+  received.reserve(160);
   received = "";
+  String data PROGMEM = "68";
   
   while(LoRa.available()){
     received += (char)LoRa.read();
   }
 
-  Message message(received);
-  
-   Serial.print("Message Received: ");
-   Serial.println(message.get_data());
+  Message incoming(received);
+  Serial.print(F("Message received: "));
+  Serial.println(incoming.get_data());
+
+//  delay(500);
+//
+  LoRa_txMode();
+  String response;
+  response.reserve(160);
+  Message outgoing("2", "1", QUERY_TYPE, 1, data, incoming.get_nonce());
+  response = outgoing.get_pack();
+  Serial.print(F("response = "));
+//  Serial.println(response);
+//  LoRa.beginPacket();
+//  LoRa.print(response);
+//  LoRa.endPacket();
+  LoRa_rxMode();
 }
 
-boolean runEvery(unsigned long interval){
-  static unsigned long previousMillis = 0;
-  unsigned long currentMillis = millis();
-  if(currentMillis - previousMillis >= interval){
-    previousMillis = currentMillis;
-    return true;
-  }
-  return false;
-}
+//boolean runEvery(unsigned long interval)
+//{
+//  static unsigned long previousMillis = 0;
+//  unsigned long currentMillis = millis();
+//  if (currentMillis - previousMillis >= interval)
+//  {
+//    previousMillis = currentMillis;
+//    return true;
+//  }
+//  return false;
+//}

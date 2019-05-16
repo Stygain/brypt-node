@@ -1046,13 +1046,20 @@ class LoRa : public Connection {
                 // Receive message
                 std::string received = "";
                 received = this->recv((int)sx1272);
+                try {
+                    Message response(received);
+                    printo("LoRa received: " + response.get_data(), CONNECTION_P);
+                    this->write_to_pipe(received);
+
+                } catch (...) {
+                    printo("LoRa message failed to unpack", CONNECTION_P);
+                }
                 if(received.size() >= 48){
                     received.erase(48, received.size()-1);
                     Message message(received);
                 }
-                std::cout << "== [LoRa] received: " << received << '\n';
-                //this->write_to_pipe(received);
-
+                clock_t t = clock();
+                while(((clock() - t)/CLOCKS_PER_SEC) < 0.5);
                 //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
                 //this->response_needed = true;

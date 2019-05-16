@@ -186,16 +186,16 @@ class Message {
 		 ** sent pack the data first.
 		 ** *************************************************************************/
 		String get_pack() {
-			// Serial.println("Get pack called");
+			// Serial.println(F("Get pack called"));
 			if ( this->raw == "" ) {
-				// Serial.println("Calling pack");
+				// Serial.println(F("Calling pack"));
 				this->pack();
 			}
-			Serial.println("Appending auth token");
+			// Serial.println(F("Appending auth token"));
 			String raw_pack;
 			raw_pack.reserve(160);
 			raw_pack = this->raw + this->auth_token;
-			Serial.println("Calling base64 encode");
+			// Serial.println(F("Calling base64 encode"));
 			return this->base64_encode( raw_pack, raw_pack.length() );
 		}
 		/* **************************************************************************
@@ -326,7 +326,7 @@ class Message {
 		void pack() {
 			String packed;
 			packed.reserve(160);
-			// Serial.println("Pack called");
+			// Serial.println(F("Pack called"));
 
 			packed = packed + (char)1;
 
@@ -344,6 +344,7 @@ class Message {
 			this->auth_token = this->hmac_blake2s( packed );
 			// Serial.println("After hmac, setting raw to packed");
 			this->raw = packed;
+			// Serial.println(raw);
 		}
 		
 		/* **************************************************************************
@@ -634,7 +635,7 @@ class Message {
 		** Source: https://github.com/ReneNyffenegger/cpp-base64/blob/master/base64.cpp#L45
 		** *************************************************************************/
 		String base64_encode(String message, unsigned int in_len) {
-		  // Serial.println("Starting base64 encode");
+		  // Serial.println(F("Starting base64 encode"));
 		  // Serial.println("Going to encode");
 		  // Serial.print("Message to encode: ");
 		  // Serial.println(message);
@@ -680,7 +681,7 @@ class Message {
 			  encoded += '=';
 			}
 		  }
-		  // Serial.print("Going to return encoded string: ");
+		  // Serial.print(F("Going to return encoded string: "));
 		  // Serial.println(encoded);
 
 		  return encoded;
