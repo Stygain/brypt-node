@@ -45,7 +45,7 @@ class Message {
 		unsigned int phase;                      // Phase of the Command state
 
 		String data;               // Encrypted data to be sent
-		String timestamp;          // Current timestamp
+		//String timestamp;          // Current timestamp
 
 		//Message * response;             // A circular message for the response to the current message
 
@@ -76,7 +76,7 @@ class Message {
 			//this->response = NULL;
 			this->auth_token = "";
 			this->nonce = 0;
-			this->set_timestamp();
+			//this->set_timestamp();
 		}
 		
 		/* **************************************************************************
@@ -111,8 +111,8 @@ class Message {
 			//this->response = NULL;
 			this->auth_token = "";
 			this->nonce = nonce;
-			this->set_timestamp();
-			this->data = this->encrypt(this->data);
+			//this->set_timestamp();
+			this->encrypt(this->data);
 		}
 
 		// Getter Functions
@@ -168,9 +168,9 @@ class Message {
 		 ** Function: get_timestamp
 		 ** Description: Return the timestamp of when the message was created.
 		 ** *************************************************************************/
-		String get_timestamp() {
-			return this->timestamp;
-		}
+		//String get_timestamp() {
+		//	return this->timestamp;
+		//}
 		
 		/* **************************************************************************
 		 ** Function: get_nonce
@@ -263,8 +263,8 @@ class Message {
 		 ** Function: set_timestamp
 		 ** Description: Determine the timestamp of the message using the system clock.
 		 ** *************************************************************************/
-		void set_timestamp() {
-			this->timestamp = "000000000";
+		//void set_timestamp() {
+		//	this->timestamp = "000000000";
 			// std::stringstream ss;
 			// std::chrono::seconds seconds;
 			// std::chrono::time_point<std::chrono::system_clock> current_time;
@@ -273,7 +273,7 @@ class Message {
 			// ss.clear();
 			// ss << seconds.count();
 			// this->timestamp = ss.str();
-		}
+		//}
 		
 		/* **************************************************************************
 		 ** Function: set_response
@@ -400,7 +400,7 @@ class Message {
 				break;
 				// Timestamp
 			  case TIMESTAMP_CHUNK:
-				this->timestamp = this->raw.substring( last_end + 2, ( chunk_end - 1 ) );
+				//this->timestamp = this->raw.substring( last_end + 2, ( chunk_end - 1 ) );
 				break;
 				// End of Message Parsing
 			  default:
@@ -524,7 +524,7 @@ class Message {
 			return str2;
 		}
 		
-		String encrypt(String plaintext){
+		void encrypt(String plaintext){
 			//Serial.println("ENCRYPT");
 			CTR<AES256> aes_ctr_256;
 			byte ctxt[128];
@@ -550,7 +550,8 @@ class Message {
 			aes_ctr_256.encrypt(ctxt, mssg, strlen((const char *)mssg));
 			
 			String cpystr((char *)ctxt);
-			String ciphertext = cpystr;
+			this->data = cpystr;
+			//String ciphertext = cpystr;
 			//Serial.print("Ciphertext: ");
 			//Serial.println(ciphertext);
 			
@@ -561,10 +562,10 @@ class Message {
 			//}
 			//Serial.println("");
 			
-			return ciphertext;
+			//return ciphertext;
 		}
 		
-		String decrypt(String ciphertext){
+		void decrypt(String ciphertext){
 			
 			byte ctxt[128];
 			memset(ctxt, '\0', 128);
@@ -594,7 +595,7 @@ class Message {
 			aes_ctr_256.decrypt(buffer, ctxt, strlen((const char *)ctxt));
 			
 			String cpystr((char *)buffer);
-			String plain = cpystr;
+			//String plain = cpystr;
 			//Serial.print("Plaintext: ");
 			//Serial.println(plain);
 			
@@ -606,9 +607,9 @@ class Message {
 			//}
 			//Serial.println("");
 			
-			this->data = plain;
+			this->data = cpystr;
 			
-			return plain;
+			//return plain;
 		}
 		
 		/* **************************************************************************
