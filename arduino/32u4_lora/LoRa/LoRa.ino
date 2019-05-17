@@ -10,7 +10,7 @@
 
 void setup() {
   Serial.begin(9600);
-  while(!Serial);
+//  while(!Serial);
 
   //Serial.println("LoRa started");
 
@@ -44,31 +44,37 @@ void LoRa_txMode(){
 }
 
 void onReceive(int packetSize){
-//  String received;
-//  received.reserve(160);
-//  received = "";
+  String received;
+  received.reserve(160);
+  received = "";
   String data PROGMEM = "68";
   
-//  while(LoRa.available()){
-//    received += (char)LoRa.read();
-//  }
-//
-//  Message incoming(received);
-//  Serial.print(F("Message received: "));
-//  Serial.println(incoming.get_data());
-
-  LoRa_txMode();
-
-  delay(1000);
+  while(LoRa.available()){
+    received += (char)LoRa.read();
+  }
   
-  String response;
-  response.reserve(160);
-  Message outgoing("2", "1", QUERY_TYPE, 1, data, NET_NONCE);
-  response = outgoing.get_pack();
-  Serial.print(F("response = "));
-  Serial.println(response);
-  LoRa.beginPacket();
-  LoRa.print(response);
-  LoRa.endPacket();
-  LoRa_rxMode();
+  Message* incoming = new Message(received);
+  Serial.print(F("Message received: "));
+  Serial.println(incoming->get_data());
+
+  if(incoming->get_source_id() == "1"){
+    delete incoming;
+  
+    LoRa_txMode();
+  
+    delay(250);
+    
+    String response;
+    response.reserve(160);
+    Message outgoing("2", "1", QUERY_TYPE, 1, data, NET_NONCE);
+    response = outgoing.get_pack();
+    Serial.print(F("response = "));
+    Serial.println(response);
+    
+    LoRa.beginPacket();
+    LoRa.print(response);
+    LoRa.endPacket();
+    
+    LoRa_rxMode();
+  }
 }
