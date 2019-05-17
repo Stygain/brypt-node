@@ -72,8 +72,8 @@ class Message {
 			this->command = NO_CMD;
 			this->phase = -1;
 			this->data = "";
-			this->timestamp = "";
-			//this->response = NULL;
+			// this->timestamp = "";
+			// this->response = NULL;
 			this->auth_token = "";
 			this->nonce = 0;
 			//this->set_timestamp();
@@ -107,7 +107,7 @@ class Message {
 			this->command = command;
 			this->phase = phase;
 			this->data = data;
-			this->timestamp = "";
+			// this->timestamp = "";
 			//this->response = NULL;
 			this->auth_token = "";
 			this->nonce = nonce;

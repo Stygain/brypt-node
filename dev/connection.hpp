@@ -1036,7 +1036,7 @@ class LoRa : public Connection {
                     opmode(OPMODE_STANDBY);
                     // std::string response = "HELLO";
                     // this->send(response.c_str());
-                    Message response("1", this->peer_name, QUERY_TYPE, 1, "HELLO", run);
+                    Message response(this->id, this->peer_name, QUERY_TYPE, 1, "HELLO", NET_NONCE);
                     this->send(&response);
                     send_diff = clock();
                     opmode(OPMODE_STANDBY);
@@ -1050,24 +1050,13 @@ class LoRa : public Connection {
                     Message response(received);
                     printo("LoRa received: " + response.get_data(), CONNECTION_P);
                     this->write_to_pipe(received);
-
                 } catch (...) {
                     printo("LoRa message failed to unpack", CONNECTION_P);
                 }
-                if(received.size() >= 48){
-                    received.erase(48, received.size()-1);
-                    Message message(received);
-                }
-                clock_t t = clock();
-                while(((clock() - t)/CLOCKS_PER_SEC) < 0.5);
-                //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
                 //this->response_needed = true;
 
-                
-
                 run++;
-                //std::this_thread::sleep_for(std::chrono::nanoseconds(5000));
             } while(true);
     	}
 

@@ -32,72 +32,43 @@ void setup() {
 }
 
 void loop() {
-//  if(runEvery(  5000)){
-//    sendMessage();
-//  }
+
 }
 
-//void sendMessage(){
-//  String data PROGMEM = "68";
-//  LoRa_txMode();
-//  String response;
-//  response.reserve(160);
-//  Message outgoing("2", "1", QUERY_TYPE, 1, data, NET_NONCE);
-//  response = outgoing.get_pack();
-//  Serial.println("response = " + response);
-//  LoRa.beginPacket();
-//  LoRa.print(response);
-//  LoRa.endPacket();
-//  LoRa_rxMode();
-//}
-
 void LoRa_rxMode(){
-  //LoRa.enableInvertIQ();
   LoRa.receive();
 }
 
 void LoRa_txMode(){
   LoRa.idle();
-  //LoRa.disableInvertIQ();
 }
 
 void onReceive(int packetSize){
-  String received;
-  received.reserve(160);
-  received = "";
+//  String received;
+//  received.reserve(160);
+//  received = "";
   String data PROGMEM = "68";
   
-  while(LoRa.available()){
-    received += (char)LoRa.read();
-  }
-
-  Message incoming(received);
-  Serial.print(F("Message received: "));
-  Serial.println(incoming.get_data());
-
-//  delay(500);
+//  while(LoRa.available()){
+//    received += (char)LoRa.read();
+//  }
 //
+//  Message incoming(received);
+//  Serial.print(F("Message received: "));
+//  Serial.println(incoming.get_data());
+
   LoRa_txMode();
+
+  delay(1000);
+  
   String response;
   response.reserve(160);
-  Message outgoing("2", "1", QUERY_TYPE, 1, data, incoming.get_nonce());
+  Message outgoing("2", "1", QUERY_TYPE, 1, data, NET_NONCE);
   response = outgoing.get_pack();
   Serial.print(F("response = "));
-//  Serial.println(response);
-//  LoRa.beginPacket();
-//  LoRa.print(response);
-//  LoRa.endPacket();
+  Serial.println(response);
+  LoRa.beginPacket();
+  LoRa.print(response);
+  LoRa.endPacket();
   LoRa_rxMode();
 }
-
-//boolean runEvery(unsigned long interval)
-//{
-//  static unsigned long previousMillis = 0;
-//  unsigned long currentMillis = millis();
-//  if (currentMillis - previousMillis >= interval)
-//  {
-//    previousMillis = currentMillis;
-//    return true;
-//  }
-//  return false;
-//}
